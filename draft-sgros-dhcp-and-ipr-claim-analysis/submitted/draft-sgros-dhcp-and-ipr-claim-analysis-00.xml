@@ -1,0 +1,682 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- This template is for creating an Internet Draft using xml2rfc,
+     which is available here: http://xml.resource.org. -->
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+<!-- One method to get references from the online citation libraries.
+     There has to be one entity for each item to be referenced.
+     An alternate method (rfc include) is described in the references. -->
+
+<!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
+<!ENTITY RFC2629 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2629.xml">
+<!ENTITY RFC3552 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3552.xml">
+<!ENTITY I-D.narten-iana-considerations-rfc2434bis SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.narten-iana-considerations-rfc2434bis.xml">
+<!ENTITY I-D.ietf-mif-mpvd-dhcp-support SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.ietf-mif-mpvd-dhcp-support.xml">
+
+<!ENTITY RFC6418 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6418.xml">
+<!ENTITY RFC6419 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6419.xml">
+<!ENTITY RFC7556 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.7556.xml">
+]>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<!-- used by XSLT processors -->
+<!-- For a complete list and description of processing instructions (PIs),
+     please see http://xml.resource.org/authoring/README.html. -->
+<!-- Below are generally applicable Processing Instructions (PIs) that most I-Ds might want to use.
+     (Here they are set differently than their defaults in xml2rfc v1.32) -->
+<?rfc strict="yes" ?>
+<!-- give errors regarding ID-nits and DTD validation -->
+<!-- control the table of contents (ToC) -->
+<?rfc toc="yes"?>
+<!-- generate a ToC -->
+<?rfc tocdepth="4"?>
+<!-- the number of levels of subsections in ToC. default: 3 -->
+<!-- control references -->
+<?rfc symrefs="yes"?>
+<!-- use symbolic references tags, i.e, [RFC2119] instead of [1] -->
+<?rfc sortrefs="yes" ?>
+<!-- sort the reference entries alphabetically -->
+<!-- control vertical white space
+     (using these PIs as follows is recommended by the RFC Editor) -->
+<?rfc compact="yes" ?>
+<!-- do not start each main section on a new page -->
+<?rfc subcompact="no" ?>
+<!-- keep one blank line between list items -->
+<!-- end of list of popular I-D processing instructions -->
+<rfc category="info" docName="draft-sgros-dhcp-and-ipr-claim-analysis-00" ipr="trust200902">
+  <!-- category values: std, bcp, info, exp, and historic
+     ipr values: full3667, noModification3667, noDerivatives3667
+     you can add the attributes updates="NNNN" and obsoletes="NNNN"
+     they will automatically be output with "(if approved)" -->
+
+  <front>
+    <title abbrev="DHCP_and_IPR">DHCP configuration in MIF and associated IPR claim</title>
+
+    <author fullname="Stjepan Gros"
+            initials="S." surname="Gros"
+            role="editor">
+      <organization>University of Zagreb</organization>
+      <address>
+        <postal>
+          <street>Unska 3</street>
+          <city>Zagreb</city>
+          <code>10000</code>
+          <country>HR</country>
+        </postal>
+        <phone></phone>
+        <email>stjepan.gros@fer.hr</email>
+      </address>
+    </author>
+
+    <author fullname="Leonardo Jelenkovic"
+            initials="L." surname="Jelenkovic"
+            >
+      <organization>University of Zagreb</organization>
+      <address>
+        <postal>
+          <street>Unska 3</street>
+          <city>Zagreb</city>
+          <code>10000</code>
+          <country>HR</country>
+        </postal>
+        <phone></phone>
+        <email>leonardo.jelenkovic@fer.hr</email>
+      </address>
+    </author>
+
+    <author fullname="Dejan Skvorc"
+            initials="D." surname="Skvorc"
+            >
+      <organization>University of Zagreb</organization>
+      <address>
+        <postal>
+          <street>Unska 3</street>
+          <city>Zagreb</city>
+          <code>10000</code>
+          <country>HR</country>
+        </postal>
+        <phone></phone>
+        <email>dejan.skvorc@fer.hr</email>
+      </address>
+    </author>
+
+    <date month="November" year="2015" day="23" />
+
+    <!-- Meta-data Declarations -->
+
+    <area>General</area>
+
+    <workgroup>Internet Engineering Task Force</workgroup>
+
+    <!-- WG name at the upperleft corner of the doc,
+         IETF is fine for individual submissions.
+	 If this element is not present, the default is "Network Working Group",
+         which is used by the RFC Editor as a nod to the history of the IETF. -->
+
+    <keyword>mpvd</keyword>
+    <keyword>dhcp</keyword>
+    <keyword>ipr</keyword>
+    <keyword>pvd</keyword>
+
+    <abstract>
+      <t>
+The purpose of this draft is to analyze different options on
+how DHCP can be used to configure PvD aware client. This is done
+in light of IPR claim made by Huawei and the necessity to find
+an option for implementation. In order for an option to be selected
+it obviously must not interfere with IPR, or, IPR has to be somehow
+invalidated.
+      </t>
+    </abstract>
+  </front>
+
+  <middle>
+
+    <section title="Introduction">
+
+      <t>
+      At IETF94 MIF Working Group decided to abandon drafts written so far
+      and to wait for implementations that would serve as a basis for a
+      new drafts <xref target="MIFminutes94" />. One of the problems was
+      the IPR claim made by Huawei <xref target="HuaweiIPRClaim" />.
+      </t>
+
+      <t>
+      This document has two purposes. The first is to identify the best path
+      to follow for the implementation of client configuration using DHCP in
+      a presence of multiple provisioning domains. The second is to present
+      analysis of the IPR claim made by Huawei in order to see how it influences
+      possible solutions. Since the licensing terms are too strict it is
+      mandatory to avoid conflict with the given patent.
+      </t>
+
+      <t>
+      This draft contains three core sections. In <xref target="requirements" />
+      the requirements on the final solution are given. It is very important to
+      agree on those in order to have criteria on which different solutions can
+      be analyzed. Then, in <xref target="IPR_Claim" /> we do a thorough
+      analysis of the IPR claim made by Huawei and also we analyse how it relates to
+      the existing proposal. Finally, in <xref target="IPR_Claim" />
+      we present different possibilities and analyze each one of them based on
+      requirements defined and IPR claim made by Huawei.
+      </t>
+
+      <section title="Requirements Language">
+        <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+        "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+        document are to be interpreted as described in <xref
+        target="RFC2119">RFC 2119</xref>.</t>
+      </section>
+    </section>
+
+    <section anchor="requirements" title="Requirements">
+      <t>
+The solution to be defined and used has to fulfill the following requirements:
+      </t>
+<!--
+      <t>List styles: 'empty', 'symbols', 'letters', 'numbers', 'hanging',
+      'format'.</t>
+-->
+
+      <t><list style="symbols">
+
+        <t>No IPR claims. The solution MUST be free of IPR claims, or if there
+        are any IPR claims then they MUST be licensed in such a way to allow
+        unrestricted implementations without any fees.</t>
+
+        <t>Backwards compatibility. The solution MUST be be backwards compatible.
+        This means that the old clients upon seeing messages defined by the
+        DHCP solution must ignore it and correctly function without knowing
+        for those messages.</t>
+
+        <t>Efficiency of implementation. The solution SHOULD be as efficient as
+        possible for the implementation. This means, for example, that messages
+        defined by the final specification should be constructed in such a way
+        to make an implementation as simple as possible.</t>
+
+        <t>Efficiency of communication. The solution SHOULD be as efficient as
+        possible for communication. This means, for example, that as few
+        messages as possible should be necessary in order for the client to
+        be fully configured.</t>
+
+      </list></t>
+    </section>
+
+    <section anchor="IPR_Claim" title="Analysis of the IPR Claim made by Huawei">
+
+      <t>
+      Before continuing a big DISCLAIMER. No lawyer has participated in the
+      development of the following text so you should take a note that this
+      is only an engineering view of a potentialy very complex problem.
+      </t>
+
+      <t>
+      The IPR claim made by Huawei <xref target="HuaweiIPRClaim" /> is based
+      on US Patent #US20140344421 <xref target="US20140344421" />. The abstract
+      of a given patent describes what is the patent about:
+      </t>
+
+      <t><list><t>
+      A method for configuring a DHCPv6 client is provided. The method includes:
+      a DHCPv6 client receiving a DHCPv6 advertisement message sent by a network
+      device having a DHCPv6 function, the DHCPv6 advertisement message comprising
+      a management domain identifier of the network device; if the DHCPv6 client
+      does not save the management domain identifier, the DHCPv6 client sending
+      a DHCPv6 request message to the network device; the DHCPv6 client receiving
+      a DHCPv6 response message sent by the network device and completing
+      configuration of the DHCPv6 client. A DHCPv6 client, a network device, and
+      a network system are also provided. Through the technical solution, multiple
+      network devices supporting a DHCPv6 server function can configure the same
+      DHCPv6 client, so as to provide technical support for realizing IPv6 client
+      and network multi-homing.</t>
+      </list></t>
+
+      <t>
+      In the given paragraph, there are two key informations:
+      </t>
+
+      <t><list style="numbers">
+      <t>
+      The use of the term "management domain identifier".
+      </t>
+
+      <t>
+      The last sentence which places the mechanism described by the patent into
+      a context where it is used.
+      </t>
+      </list></t>
+
+      <t>
+      These two key parts are in direct correlation with the mechanism to configure
+      MPvDs as described in <xref target="I-D.ietf-mif-mpvd-dhcp-support" />.
+      Namely, "management domain identifier" is basically PvD_ID and the last
+      sentence describes multi-homing environment, which basically MPvD is also.
+      Note that "multi-homing environment" can be achieved on a single network with
+      multiple ISPs and multiple networks, each with an ISP. The context of the
+      patent is the former one, while of the MPvD is the latter one. To see that
+      the MPvD context is multiple ISPs on multiple physical and/or virtual network
+      one should take a look at Section 4 of MIF Architecture Document
+      <xref target="RFC7556" />. This is very important distinction.
+      </t>
+
+      <t>
+      In the following subsections we analyze separately two different parts of
+      the patent, protocol part and the implementation part. Protocol part is the
+      more important, but implementation is also very important due to the
+      patentability requirements <xref target="algorithmspatentable" />.
+      </t>
+
+      <section title="Detailed analysis of the protocol part">
+
+        <t>
+        Figure 1 in the patent claim describes scenario of client configuration
+        via DHCPv6 when patented configuration mechanism is used. According to the
+        given description the following sequence of steps happens:
+        </t>
+
+        <t><list style="numbers">
+        <t>
+        Upon client sending SOLICIT message, DHCPv6 server sends ADVERTISE message.
+        This message includes an option that defines "management domain identifier".
+        Additional rules are mentioned later in the text concerning the SOLICIT
+        message:
+
+          <list style="numbers">
+          <t>
+          Paragraph [0045] says that client sends SOLICIT message but _without_
+          an option "management domain identifier". Furthermore, judging by the
+          [0045], DHCPv6 server MUST include "management domain identifier".
+          </t>
+
+          <t>
+          In paragraph [0050] it says further that when client receives SOLICIT
+          message with previously unknown "management domain identifier" then
+          "the DHCPv6 client may send the DHCPv6 request message to the network
+          device and store the management domain identifier of the network
+          device. The DHCPv6 request message is adapted to request the network
+          device to configure the DHCPv6 client."
+          </t>
+
+          <t>
+          Then, paragraph [0046] contradicts paragraph [0045] by saying that "management
+          domain identifier" doesn't have to be included. Yet, in that case the question
+          is what makes so special this patent from regular DHCPv6 exchange.
+          </t>
+
+          <t>
+          Also, in paragraph [0046] it says that the "management domain identifier"
+          defines to WHICH MANAGEMENT DOMAIN NETWORK DEVICE BELONGS. According to this,
+          "management domain identifier" identifies some management domain and not a
+          set of configuration parameters that can belong to some management domain.
+          This is emphasised by explicitly saying that "... management domain identifier
+          may be a name of an ISP or a name of an organization."
+          </t>
+
+          </list>
+
+        </t>
+
+        <t>
+        Client sends REQUEST message. There are few problems with the description in
+        this part:
+
+          <list>
+          <t>
+          There is ambiguity here as it doesn't specify
+          weather client sends "management domain identifier" option in REQUEST or not.
+          </t>
+
+          <t>
+          It sounds like there is unfinished sentence here. Namely, this part in
+          the patent application says:
+
+            <list style="empty"><t>
+            [0043] 104: The DHCPv6 client sends a DHCPv6 request
+            message to the network device and stores the management
+            domain identifier, when the client does not store the management
+            domain identifier.
+            </t></list>
+
+          Note the last part of the sentence, "when the client does not store the 
+          management domain identifier". It doesn't make any sense! Reading through
+          the later text (specifically paragraph [0050]) it seems to be a C/P error.
+          </t>
+
+          <t>
+          The patent application doesn't define what happens when client sends
+          REQUEST message to multicast address which is received by all other
+          DHCP servers, i.e. what other DHCP servers not belonging to a given
+          management domain do.
+          </t>
+  
+          </list>
+
+        </t>
+
+        <t>
+        As the final step DHCPv6 client receives configuration data in a
+        REPLY message. This part is underwritten/underspecified. To see that
+        here is quote from the relevant part of the patent:
+
+          <list style="empty"><t>
+          [0044] 106: The DHCPv6 client receives a DHCPv6 reply
+          message from the network device and configures the
+          DHCPv6 client according to the DHCPv6 reply message. The
+          DHCPv6 reply message includes an IPv6 prefix assigned to
+          the DHCPv6 client by the network device and a network
+          configuration parameter assigned to the DHCPv6 client by
+          the network device; or the DHCPv6 reply message includes
+          an IPv6 address assigned to the DHCPv6 client by the net
+          work device and a network configuration parameters assigned
+          to the DHCPv6 client by the network device.
+          </t></list>
+
+        First, it says that IPv6 address or IPv6 prefix MUST be present
+        in the configuration message. Also, if IPv6 prefix is present
+        than a single network configuration parameter is assigned, while
+        if it is IPv6 address then "a network configuration parameters"
+        are present. In paragraph [0050] both are assumed to have a single
+        parameter!
+        </t>
+        </list></t>
+
+      </section>
+
+      <section title="Detailed analysis of the implementation part">
+
+        <t>
+        Figures 3, 4 and 5 in the patent claim show implementation of the
+        given patent. The reason for this is that protocols (which are in
+        essence distributed algorithms) can not be patented
+        <xref target="algorithmspatentable" />. 
+        </t>
+
+        <t>
+        Looking at the figures presented, there is no difference between
+        the implementations that support "management domain identifier".
+        After all, it is well known from the existing server implementations
+        that in order to add new option it is necessary just to change a
+        line or two in the configuration file.
+        </t>
+
+      </section>
+ 
+      <section title="Differences between the patent and draft-ietf-mif-mpvd-dhcp-support">
+
+        <t>
+        There are differences between the patent and the solution as proposed
+        in the draft:
+        </t>
+
+        <t><list style="numbers">
+
+        <t>
+        "Management domain" while isn't defined by the patent isn't used to identify
+        set of a configuration parameters, but a whole domain managed by some
+        authority. PvD, on the other hand, identifies a set of configuration parameters
+        no matter to whom they belong.
+        </t>
+
+        <t>
+        The context of the patent is a single network with multipe ISPs, while the
+        context of MIF is multiple connections, each with a single ISP.
+        </t>
+
+        <t>
+        Option with "management domain ID" is like any other option, i.e. it is not
+        a container for the other options as in MPvD DHCP proposal.
+        </t>
+
+        <t>
+        In the given patent there is 1 to 1 mapping between DHCP server and management
+        domain. In MPvD, on the contrary, one DHCP server can host multiple provisioning
+        domains.
+        </t>
+
+        <t>
+        As per the patent only ADVERTISE message has "management domain identifier"
+        option included.
+        </t>
+
+        <t>
+        In the patent application management IDs are sent without being requested by the
+        client. So, in case the client explicitly requests different management domain
+        the patent doesn't apply.
+        </t>
+
+        <t>
+        The mechanism in patent, as described, couldn't be implemented without first
+        resolving some issues not defined precisely enough. (the case what all DHCP
+        servers should do upon receive REQUEST possibly without "management domain
+        identifier" within)
+        </t>
+
+        <t>
+        The patent doesn't specify anything else being part of "management domain" other
+        then IPv6 address or prefix.
+        </t>
+
+        </list></t>
+      </section>
+
+      <section anchor="ipr_conclusion" title="Conclusion">
+
+        <t>
+        The first conclusion is that this patent actually patents an algorithm,
+        and since algorithms aren't patentable than the patent itself is invalid.
+        </t>
+
+        <t>
+        The conclusion is that by introducing a configuration option with PVD_ID
+        that functions as a container for other options isn't in collision with
+        the given patent.
+        </t>
+
+      </section>
+
+    </section>
+
+    <section anchor="PossibleSolutions" title="Possible Solutions">
+
+      <t>
+      The first step towards the possible solutions is enumeration of all the
+      options. 
+      </t>
+
+      <t>
+      For a start, there certainly must be a way for DHCP server to convey
+      information about specific PvD to a client. This can be done either
+      implicitly or explicitly and directly or indirectly:
+
+      <list style="symbols">
+
+        <t>
+        Implicit. The information that the parameters within a message belong
+        to some particular PvD isn't contained within DHCP message itself but
+        somewhere outside of it. 
+        </t>
+
+        <t>
+        Explicit. The information that certain parameters within the message
+        belong to some specific PvD is contained within the message itself.
+        </t>
+
+        <t>
+        Direct. All the necessary information necessary to identify PvD are
+        placed within the DHCP message.
+        </t>
+
+        <t>
+        Indirect. Information about PvD isn't fully contained within DHCP
+        message but has to be obtained by some other mean. 
+        </t>
+
+      </list>
+      </t>
+
+      <t>
+      When information about PvD is explicit then it can be done in the
+      following ways:
+
+      <list style="numbers">
+
+      <t>
+      A single option within DHCP message can define PvD the whole message
+      belongs to. This approach has two problems. The first is backwards
+      compatibility. Clients not aware of PvD will be confused with multiple
+      configuration parameters. The second problem is that it resembles the
+      IPR claim made by Huawei and analyzed in the previous section.
+      </t>
+
+      <t>
+      Prefixing each option with an option that identifies PvD to which the
+      given option belongs to. This approach has the problem of bloating
+      DHCP message, and also there is a problem with backwards compatibility.
+      </t>
+
+      <t>
+      Defining separate set of configuration options in which each contains
+      PvD ID and appropriate option. The problem with this approach is the
+      number of options that should be duplicated.
+      </t>
+
+      <t>
+      Using container option which holds all the options specific for a given
+      PvD. This approach was used in the existing proposal of PvD configuration
+      using DHCP messages <xref target="I-D.ietf-mif-mpvd-dhcp-support" />.
+      </t>
+
+      <t>
+      There is an indicator within DHCP message about availability of other
+      PvDs. When PvD aware client receives such message, it requests
+      additional configuration options, e.g. by using DHCP INFORM messages.
+      DHCP INFORM messages could be used to obtain a list of all available
+      PvD_IDs and to request specific PvD_IDs. This is an example of indirect
+      configuration of a client.
+      </t>
+
+      </list>
+      </t>
+
+    </section>
+
+    <section anchor="Acknowledgements" title="Acknowledgements">
+      <t>
+      </t>
+    </section>
+
+    <!-- Possibly a 'Contributors' section ... -->
+
+    <section anchor="IANA" title="IANA Considerations">
+      <t>This memo includes no request to IANA.</t>
+
+      <t>All drafts are required to have an IANA considerations section (see
+      <xref target="I-D.narten-iana-considerations-rfc2434bis">the update of
+      RFC 2434</xref> for a guide). If the draft does not require IANA to do
+      anything, the section contains an explicit statement that this is the
+      case (as above). If there are no requirements for IANA, the section will
+      be removed during conversion into an RFC by the RFC Editor.</t>
+    </section>
+
+    <section anchor="Security" title="Security Considerations">
+      <t>All drafts are required to have a security considerations section.
+      See <xref target="RFC3552">RFC 3552</xref> for a guide.</t>
+    </section>
+  </middle>
+
+  <!--  *****BACK MATTER ***** -->
+
+  <back>
+    <!-- References split into informative and normative -->
+
+    <!-- There are 2 ways to insert reference entries from the citation libraries:
+     1. define an ENTITY at the top, and use "ampersand character"RFC2629; here (as shown)
+     2. simply use a PI "less than character"?rfc include="reference.RFC.2119.xml"?> here
+        (for I-Ds: include="reference.I-D.narten-iana-considerations-rfc2434bis.xml")
+
+     Both are cited textually in the same manner: by using xref elements.
+     If you use the PI option, xml2rfc will, by default, try to find included files in the same
+     directory as the including file. You can also define the XML_LIBRARY environment variable
+     with a value containing a set of directories to search.  These can be either in the local
+     filing system or remote ones accessed by http (http://domain/dir/... ).-->
+
+    <references title="Normative References">
+      <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?-->
+
+      &RFC2119;
+
+      &RFC6418;
+
+      &RFC6419;
+
+      &RFC7556;
+
+    </references>
+
+    <references title="Informative References">
+      <!-- Here we use entities that we defined at the beginning. -->
+
+      &RFC2629;
+
+      &RFC3552;
+
+      &I-D.narten-iana-considerations-rfc2434bis;
+
+      &I-D.ietf-mif-mpvd-dhcp-support;
+
+      <!-- A reference written by an organization not a person. -->
+
+      <reference anchor="HuaweiIPRClaim"
+                 target="https://datatracker.ietf.org/ipr/2648/">
+        <front>
+          <title>Huawei Technologies Co.,Ltd's Statement about IPR related to draft-ietf-mif-mpvd-dhcp-support</title>
+
+          <author>
+            <organization>Huawei Technologies Co.</organization>
+          </author>
+
+          <date year="2014" month="August" day="1" />
+        </front>
+      </reference>
+
+      <reference anchor="US20140344421"
+                 target="http://www.google.com/patents/US20140344421">
+        <front>
+          <title>Method for configuring dhcpv6 client, dhcpv6 client, network device, and network system</title>
+
+          <author>
+            <organization>Huawei Technologies Co.</organization>
+          </author>
+
+          <date year="2015" month="August" day="3" />
+        </front>
+      </reference>
+
+      <reference anchor="MIFminutes94"
+                 target="https://www.ietf.org/proceedings/94/minutes/minutes-94-mif">
+        <front>
+          <title>IETF 94th MIF minutes</title>
+
+          <author>
+            <organization>IETF94</organization>
+          </author>
+
+          <date year="2015" month="November" day="22" />
+        </front>
+      </reference>
+
+      <reference anchor="algorithmspatentable"
+                 target="http://programmers.stackexchange.com/questions/32482/can-an-algorithm-be-patented">
+        <front>
+          <title>Can an algorithm be patented?</title>
+
+          <author>
+            <organization>StackExchange</organization>
+          </author>
+
+          <date year="2010" month="December" day="30" />
+        </front>
+      </reference>
+
+    </references>
+
+  </back>
+</rfc>

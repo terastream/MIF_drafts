@@ -1,0 +1,691 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- This template is for creating an Internet Draft using xml2rfc,
+     which is available here: http://xml.resource.org. -->
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+<!-- One method to get references from the online citation libraries.
+     There has to be one entity for each item to be referenced.
+     An alternate method (rfc include) is described in the references. -->
+
+<!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
+<!ENTITY RFC2629 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2629.xml">
+<!ENTITY RFC3552 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3552.xml">
+<!ENTITY I-D.narten-iana-considerations-rfc2434bis SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.narten-iana-considerations-rfc2434bis.xml">
+<!ENTITY I-D.ietf-mif-mpvd-dhcp-support SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.ietf-mif-mpvd-dhcp-support.xml">
+<!ENTITY I-D.ietf-mif-mpvd-ndp-support SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.ietf-mif-mpvd-ndp-support.xml">
+
+<!ENTITY RFC6418 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6418.xml">
+<!ENTITY RFC6419 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6419.xml">
+<!ENTITY RFC7556 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.7556.xml">
+]>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<!-- used by XSLT processors -->
+<!-- For a complete list and description of processing instructions (PIs),
+     please see http://xml.resource.org/authoring/README.html. -->
+<!-- Below are generally applicable Processing Instructions (PIs) that most I-Ds might want to use.
+     (Here they are set differently than their defaults in xml2rfc v1.32) -->
+<?rfc strict="yes" ?>
+<!-- give errors regarding ID-nits and DTD validation -->
+<!-- control the table of contents (ToC) -->
+<?rfc toc="yes"?>
+<!-- generate a ToC -->
+<?rfc tocdepth="4"?>
+<!-- the number of levels of subsections in ToC. default: 3 -->
+<!-- control references -->
+<?rfc symrefs="yes"?>
+<!-- use symbolic references tags, i.e, [RFC2119] instead of [1] -->
+<?rfc sortrefs="yes" ?>
+<!-- sort the reference entries alphabetically -->
+<!-- control vertical white space
+     (using these PIs as follows is recommended by the RFC Editor) -->
+<?rfc compact="yes" ?>
+<!-- do not start each main section on a new page -->
+<?rfc subcompact="no" ?>
+<!-- keep one blank line between list items -->
+<!-- end of list of popular I-D processing instructions -->
+<rfc category="info" docName="draft-sgros-dhcp-and-ipr-claim-analysis-00" ipr="trust200902">
+  <!-- category values: std, bcp, info, exp, and historic
+     ipr values: full3667, noModification3667, noDerivatives3667
+     you can add the attributes updates="NNNN" and obsoletes="NNNN"
+     they will automatically be output with "(if approved)" -->
+
+  <front>
+    <title abbrev="Configuring PvD using NDP">Configuring hosts with multiple provisioning domains using NDP</title>
+
+    <author fullname="Stjepan Gros"
+            initials="S." surname="Gros"
+            role="editor">
+      <organization>University of Zagreb</organization>
+      <address>
+        <postal>
+          <street>Unska 3</street>
+          <city>Zagreb</city>
+          <code>10000</code>
+          <country>HR</country>
+        </postal>
+        <phone></phone>
+        <email>stjepan.gros@fer.hr</email>
+      </address>
+    </author>
+
+    <author fullname="Leonardo Jelenkovic"
+            initials="L." surname="Jelenkovic"
+            >
+      <organization>University of Zagreb</organization>
+      <address>
+        <postal>
+          <street>Unska 3</street>
+          <city>Zagreb</city>
+          <code>10000</code>
+          <country>HR</country>
+        </postal>
+        <phone></phone>
+        <email>leonardo.jelenkovic@fer.hr</email>
+      </address>
+    </author>
+
+    <author fullname="Dejan Skvorc"
+            initials="D." surname="Skvorc"
+            >
+      <organization>University of Zagreb</organization>
+      <address>
+        <postal>
+          <street>Unska 3</street>
+          <city>Zagreb</city>
+          <code>10000</code>
+          <country>HR</country>
+        </postal>
+        <phone></phone>
+        <email>dejan.skvorc@fer.hr</email>
+      </address>
+    </author>
+
+    <date month="November" year="2015" day="23" />
+
+    <!-- Meta-data Declarations -->
+
+    <area>General</area>
+
+    <workgroup>Internet Engineering Task Force</workgroup>
+
+    <!-- WG name at the upperleft corner of the doc,
+         IETF is fine for individual submissions.
+	 If this element is not present, the default is "Network Working Group",
+         which is used by the RFC Editor as a nod to the history of the IETF. -->
+
+    <keyword>mpvd</keyword>
+    <keyword>ra</keyword>
+    <keyword>ndp</keyword>
+    <keyword>mif</keyword>
+
+    <abstract>
+      <t>
+      The purpose of this draft is to analyze different options on
+      how RA/RS can be used to configure multiple provisioning domains,
+      both implicit and explicit. The draft lists options and arguments
+      pro and con each option and then selects specific ones for the
+      implementation.
+      </t>
+    </abstract>
+  </front>
+
+  <middle>
+
+    <section title="Introduction">
+
+      <t>
+      The purpose of this draft is to analyze different options on
+      how RA/RS messages can be used to configure multiple provisioning
+      domains, both implicit and explicit. The draft lists options and
+      arguments pro and con each option and then selects specific ones
+      for the implementation. While analyzing pros and cons we take into
+      account some real implementations and how they should be changed.
+      </t>
+
+      <section title="Requirements Language">
+        <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+        "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+        document are to be interpreted as described in <xref
+        target="RFC2119">RFC 2119</xref>.</t>
+      </section>
+    </section>
+
+    <section title="Provisioning Domain characteristics">
+
+      <section title="PvD content">
+
+      <t>
+      It is important to know what information belongs to a PvD. Namely,
+      if there is PvD container option that holds all information belonging
+      to a specific PvD then it is clear that information contained in the
+      header of the RA message couldn't be included within container
+      options. Information such as gatway addres, hop limit, router lifetime
+      and timers, and flaggs M and O must be common to all content of the RA.
+      </t>
+
+      <t>
+      PvD has to contain gateway address, one or more. The problem is that this
+      information isn't an option and thus can not be embedded within a
+      PvD container. So, all PvDs sent by some router will have the same gateway
+      address. Note that multiple routers can send RAs with the _same_ PvD in
+      it. In such cases gateway addresses are merged.
+      </t>
+
+      </section>
+
+      <section title="Identifying implicit PvDs">
+
+        <t>
+        In this section we discuss how PvD aware clients should identify
+        implicit PvDs they receive. Note that there is possibility to
+        allow PvD ID option to be sent as any other option and in that
+        way to "tag" configuration options within RA or a DHCP message.
+        In this section we are concerned with a problem when configuration
+        options are received witouth such an option or any other indication
+        of the PvDs identity.
+        </t>
+
+        <t>
+        The idea is to generate identifier of a set of configuration options
+        that uniquely identify a PvD. In other words, whenever any element
+        of the given set changes, that should be an indication of
+        connectivity change. This set can then be hashed in order to
+        produce UUID that would be used as PvD ID of the given
+        connection. Furhtermore, the process of generating PvD ID
+        could be prescribed so that all PvD aware nodes, receiving the
+        same set of configuration parameters, would assign it the 
+        same PvD ID.
+        </t>
+
+        <t>
+        The following elements could comprise a set of parameters that
+        uniquely identify PvD:
+        </t>
+
+        <t><list style="symbols">
+
+          <t>
+          All network prefix(es) used on a local network.
+          </t>
+
+          <t>
+          Routes specific to a gateway that sent RA.
+          </t>
+
+          <t>
+          Addresses of DNS servers.
+          </t>
+
+          <t>
+          Domain names served by DNS servers.
+          </t>
+
+        </list></t>
+
+        <t>
+        Time values are not take in into account while determining to which
+        PvD given configuration parameters belong to. Also, the following
+        parameters are for consideration should they or not be taken into
+        account when determining PvD identities:
+        </t>
+
+        <t><list style="symbols">
+
+          <t>
+          hop_limit
+          </t>
+
+          <t>
+	  mtu
+          </t>
+
+          <t>
+	  dhcp_level
+          </t>
+
+          <t>
+	  Different lifetimes.
+          </t>
+
+        </list></t>
+
+        <t>
+        Note that in some cases there could be the same set of network(!)
+        configuration parameters used on multipe different networks.
+        This is the case with IPv4 private space in which IP network mask,
+        gateway and DNS server combination doesn't have to be unique!
+        Take for example residential networks, or different companies.
+        This might pose a problem for determining ID of implicit PvD by
+        calculating hash of network layer parameters. On IPv6 this isn't
+        a problem due to the use of private addresses and/or MAC addresses
+        when generating specific addresses.
+        </t>
+
+      </section>
+
+      <section title="Managing PvD lifecycle">
+
+        <t>
+	PvDi lifecycle consists of the step when they are created and
+        communicated to the nodes, used with the nodes, and finally
+	removed when the node loses connectivity. How PvDs are communicated
+        to nodes is discussed in <xref target="client_configuration" />.
+        Here, we are concerned with a node behavior with respect to PvDs.
+        More specifically, here are some the questions:
+        </t>
+
+        <t><list style="symbols">
+
+          <t>
+          PvDs are received through some interface. Probably they should
+          be bound to this interface in a sense that when the interface
+          stops PvDs should disappear.
+          </t>
+
+          <t>
+          Should applications know about relationship between PvDs and
+          interfaces, or should they only know for PvDs while some more
+          advanced applications would know for the connection?
+          </t>
+
+          <t>
+          When a node first time learns about PvD, how long is this
+          information retained? Until connection ends, or forever with
+          some indication that PvD isn't active?
+          </t>
+
+          <t>
+          Suppose that on a single link there is implicit PvD and at least
+          one explicit link. What should node do when implicit PvD
+          disappears but explicit is stil present? Could this happen?
+          </t>
+
+          <t>
+          How can router remove a specific PvD? The only possibility is to send
+          all the options with lifetime set to zero. The problem is that not
+          all options support lifetime.
+          </t>
+
+        </list></t>
+
+	<t>
+        Some questions are not specific for PvDs but are also valid for NDP
+        in general so they might already have an answer. Still, for completness
+        and until we figure out answers, here are they:
+	</t>
+
+        <t><list>
+
+          <t>
+          There are multiple lifetimes in RA message, and in PvD in particular.
+          What if one element of PvD times out, others not? Should only this
+          particular element be removed, or the all PvD? For example, what if
+          prefix disappears and other elements don't?
+          </t>
+
+          <t>
+          What if in one RA message there is certain set of parameters, but then
+          in the following message some parameters from the first message are
+          missing? How should implementation react in that case?
+          </t>
+
+        </list></t>
+
+      </section>
+
+    </section>
+
+    <section anchor="client_configuration" title="Options to configure hosts with PvDs">
+
+      <t>
+      When a router has multiple PvDs there are several options to send this
+      information to hosts on a local network. We'll group them into two
+      orthogonal cases. The first group are options for unsolicited RAs:
+      </t>
+
+      <t><list style="symbols">
+
+        <t>
+        Option A1. In every RA router sends all known PvDs, implicit and
+        explicit.
+        </t>
+
+        <t>
+        Option A2. In every RA router sends a subset of known PvDs,
+        implicit and explicit. Others are available upon request by
+        hosts.
+        </t>
+
+        <t>
+        Option A3. Router sends RAs with a list of all PvD IDs it knows
+        of.
+        </t>
+
+        <t>
+        Option A4. Router sends RAs with only implicit PvD and indication
+        that it supports PvD.
+        </t>
+
+      </list></t>
+
+      <t>
+      The second group are options when there is solicitation. In this case
+      the options are:
+      </t>
+
+      <t><list style="symbols">
+
+        <t>
+        Option B1. When host sends RS it doesn't include any special options
+        about PvD. Router sends RA with all PvDs included.
+        </t>
+
+        <t>
+        Option B2. When host sends RS it includes an option that indicates
+        host's support for PvDs. Router sends RA with all PvDs included.
+        If the host doesn't include option to indicate PvD support, the
+        router doesn't send any PvDs.
+        </t>
+
+        <t>
+        Option B3. When host sends RS it can include a list of PvD IDs and
+        in that way requests information about specific PvD. There could
+        be a wildcard PvD ID that signals to router that every known PvD
+        should be sent in the RA.
+        </t>
+
+      </list></t>
+
+      <t>
+      </t>
+
+      <section title="Unsolicited RAs">
+
+        <section title="Sending all PvDs in every RA (A1)">
+
+        <t>
+        In this case router sends in each RA every PvD it knows of.
+        </t>
+
+        <t>
+        When some PvD is removed the router sends RA without the PvD included
+        and in that way signalizes that PvD isn't available anymore. [TBD is
+        this how RAs work].
+        </t>
+
+        <t>
+        Pros of this case is simplicity of implementation. No change in RS
+        needed.
+        </t>
+
+        <t>
+        Cons of this case is that RA message size might grow and make the
+        system inefficient. This can be particular problem in wireless
+        networks where number of errors is high.
+        </t>
+
+        </section>
+
+        <section title="Sending subset of PvDs in every RA (A2)">
+
+        <t>
+        In this case router sends in each RA only a certain subset of PvDs it
+        knows of. The client (in some way) knows that there are additional
+        PvDs so it can ask for them by sending RS message.
+        </t>
+
+        <t>
+        Pros of this case are that the RA message size can be controlled and
+        the client immediatelly knows of (at least) some PvDs.
+        </t>
+
+        <t>
+        Cons of this case is that there should be a way for router to revoke
+        some PvDs.
+        </t>
+
+        </section>
+
+        <section title="Sending implicit PvD with a list of PvD IDs (A3)">
+
+        <t>
+        In this case router sends in each RA implicit PvD, if it has one
+        and a list of all (or subset) of PvD IDs it has. Client needs to
+        use RS with included PvD IDs to obtain configuration data for each
+        PvD.
+        </t>
+
+        </section>
+
+        <section title="Sending only implicit PvD (A4)">
+
+        <t>
+        In this case router sends in each RA only implicit PvD, if it has one.
+        It might somewhere (some flag) indicate the support for PvDs so that
+        clients that receive RA know that they should request PvDs separately.
+        </t>
+
+        </section>
+
+      </section>
+
+      <section title="Solicited RAs">
+
+        <t>
+        Note that in the case of hosts asking for specific PvDs routers that
+        don't know for the given PvD ID will also receive requests! This is
+        due to RS being sent to All_Routers multicast address, and not to
+        a specific router.
+        </t>
+
+          <section title="RS without any change (B1)">
+
+          <t>
+          When host sends RS it doesn't include any special options about PvD.
+          Router MUST send RA with all PvDs included as there is no way for
+          client to request PvDs.
+          </t>
+
+          <t>
+          This case fits well with the option A1 and option A2. In case of
+          the option A2 it incurrs one additional round-trip time!
+          </t>
+
+          </section>
+
+          <section title="RS with indication of PvD support (B2)">
+
+          <t>
+          When host sends RS it includes an option that indicates host's support
+          for PvDs. Router sends RA with all PvDs included. If the host doesn't
+          include option to indicate PvD support, the router doesn't send any
+          PvDs.
+          </t>
+
+          <t>
+          When sending response the router has three options:
+          </t>
+
+          <t><list style="symbols">
+
+            <t>
+            Only PvDs are included in the response, no implicit PvD.
+            </t>
+
+            <t>
+            Everything router knows, implicit and explicit PvDs, sends
+            in a single response.
+            </t>
+
+            <t>
+            Router sends implicit PvD and a list of known PvD IDs.
+            </t>
+
+          </list></t>
+
+          <t>
+          Depending on the chosen RS, this case fits with options A1,
+          A2 and A3.
+          </t>
+
+          </section>
+
+        <section title="RS with request for specific PvDs (B3)">
+
+          <t>
+          When host sends RS it can include one or more PvD IDs and in that
+          way requests information about specific PvD. There could be a
+          wildcard PvD ID that signals to router that every known PvD
+          should be sent in the RA.
+          </t>
+
+          <t>
+          When router sends PvDs in a separate RAs there are two options:
+          </t>
+
+          <t><list style="symbols">
+
+            <t>
+            Only requested PvD(s) is sent in the RA. In case of wildcard
+            PvD ID every known PvD ID to a router is sent.
+            </t>
+
+            <t>
+            Only requested PvD(s) is sent in the RA. In case of wildcard
+            PvD ID subset of known PvD IDs to a router are sent. Others
+            must be requested explicitly.
+            </t>
+
+            <t>
+            Along with requested PvD(s) included is also an implicit PvD.
+            </t>
+
+          </list></t>
+
+        <t>
+        This case fits with options A1, A2 and A3.
+        </t>
+
+        <t>
+        In case wildcard PvD ID is used option A4 is also possible.
+        </t>
+
+        </section>
+
+      </section>
+
+    </section>
+
+    <section title="Sequence of steps to configure PvD on a host">
+
+      <t>
+      TBD.
+      </t>
+
+      <section title="Implemented option">
+
+        <t>
+        TBD.
+        </t>
+
+      </section>
+
+      <section title="Optimal case">
+
+        <t>
+        TBD.
+        </t>
+
+      </section>
+
+    </section>
+
+    <section title="PvD characteristics description">
+
+      <t>
+      One very important question is how will clients know for what
+      purposes the specific PvD is used for. In this section we list
+      possible options to achieve that.
+      </t>
+
+    </section>
+
+    <section title="Encapsulating PvDs in RAs">
+
+      <t>
+      </t>
+
+    </section>
+
+    <section anchor="Acknowledgements" title="Acknowledgements">
+      <t>
+      TBW.
+      </t>
+    </section>
+
+    <!-- Possibly a 'Contributors' section ... -->
+
+    <section anchor="IANA" title="IANA Considerations">
+      <t>This memo includes no request to IANA.</t>
+
+      <t>All drafts are required to have an IANA considerations section (see
+      <xref target="I-D.narten-iana-considerations-rfc2434bis">the update of
+      RFC 2434</xref> for a guide). If the draft does not require IANA to do
+      anything, the section contains an explicit statement that this is the
+      case (as above). If there are no requirements for IANA, the section will
+      be removed during conversion into an RFC by the RFC Editor.</t>
+    </section>
+
+    <section anchor="Security" title="Security Considerations">
+      <t>All drafts are required to have a security considerations section.
+      See <xref target="RFC3552">RFC 3552</xref> for a guide.</t>
+    </section>
+  </middle>
+
+  <!--  *****BACK MATTER ***** -->
+
+  <back>
+    <!-- References split into informative and normative -->
+
+    <!-- There are 2 ways to insert reference entries from the citation libraries:
+     1. define an ENTITY at the top, and use "ampersand character"RFC2629; here (as shown)
+     2. simply use a PI "less than character"?rfc include="reference.RFC.2119.xml"?> here
+        (for I-Ds: include="reference.I-D.narten-iana-considerations-rfc2434bis.xml")
+
+     Both are cited textually in the same manner: by using xref elements.
+     If you use the PI option, xml2rfc will, by default, try to find included files in the same
+     directory as the including file. You can also define the XML_LIBRARY environment variable
+     with a value containing a set of directories to search.  These can be either in the local
+     filing system or remote ones accessed by http (http://domain/dir/... ).-->
+
+    <references title="Normative References">
+      <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?-->
+
+      &RFC2119;
+
+      &RFC6418;
+
+      &RFC6419;
+
+      &RFC7556;
+
+    </references>
+
+    <references title="Informative References">
+      <!-- Here we use entities that we defined at the beginning. -->
+
+      &RFC2629;
+
+      &RFC3552;
+
+      &I-D.narten-iana-considerations-rfc2434bis;
+
+      &I-D.ietf-mif-mpvd-dhcp-support;
+
+      &I-D.ietf-mif-mpvd-ndp-support;
+
+      <!-- A reference written by an organization not a person. -->
+
+    </references>
+
+  </back>
+</rfc>
