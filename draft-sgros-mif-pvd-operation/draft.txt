@@ -14,11 +14,14 @@ Expires: May 26, 2016                               University of Zagreb
 
 Abstract
 
-   The purpose of this draft is to analyze different options on how RA/
-   RS can be used to configure multiple provisioning domains, both
-   implicit and explicit.  The draft lists options and arguments pro and
-   con each option and then selects specific ones for the
-   implementation.
+   The purpose of this draft is to present experiences gained while
+   trying to implement support for PVDs in the Linux operating system.
+   Two prototype implementations were done as a part of this endeavor,
+   one from scratch and another as a part of existing component
+   (NetworkManager).  The implementations themselves are described in a
+   separate document while this one is about topics independent from
+   particular system, i.e. more in line with the networking
+   standardization.
 
 Status of This Memo
 
@@ -47,9 +50,6 @@ Copyright Notice
    (http://trustee.ietf.org/license-info) in effect on the date of
    publication of this document.  Please review these documents
    carefully, as they describe your rights and restrictions with respect
-   to this document.  Code Components extracted from this document must
-   include Simplified BSD License text as described in Section 4.e of
-
 
 
 
@@ -58,54 +58,54 @@ Gros, et al.              Expires May 26, 2016                  [Page 1]
 Internet-Draft          Configuring PvD using NDP          November 2015
 
 
+   to this document.  Code Components extracted from this document must
+   include Simplified BSD License text as described in Section 4.e of
    the Trust Legal Provisions and are provided without warranty as
    described in the Simplified BSD License.
 
 Table of Contents
 
    1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
-     1.1.  Requirements Language . . . . . . . . . . . . . . . . . .   2
+     1.1.  Requirements Language . . . . . . . . . . . . . . . . . .   3
    2.  Provisioning Domain characteristics . . . . . . . . . . . . .   3
      2.1.  PvD content . . . . . . . . . . . . . . . . . . . . . . .   3
-     2.2.  Identifying implicit PvDs . . . . . . . . . . . . . . . .   3
-     2.3.  Managing PvD lifecycle  . . . . . . . . . . . . . . . . .   4
-   3.  Options to configure hosts with PvDs  . . . . . . . . . . . .   5
-     3.1.  Unsolicited RAs . . . . . . . . . . . . . . . . . . . . .   6
-       3.1.1.  Sending all PvDs in every RA (A1) . . . . . . . . . .   6
-       3.1.2.  Sending subset of PvDs in every RA (A2) . . . . . . .   6
-       3.1.3.  Sending implicit PvD with a list of PvD IDs (A3)  . .   6
-       3.1.4.  Sending only implicit PvD (A4)  . . . . . . . . . . .   6
-     3.2.  Solicited RAs . . . . . . . . . . . . . . . . . . . . . .   7
-       3.2.1.  RS without any change (B1)  . . . . . . . . . . . . .   7
-       3.2.2.  RS with indication of PvD support (B2)  . . . . . . .   7
-       3.2.3.  RS with request for specific PvDs (B3)  . . . . . . .   7
-   4.  Sequence of steps to configure PvD on a host  . . . . . . . .   8
-     4.1.  Implemented option  . . . . . . . . . . . . . . . . . . .   8
-     4.2.  Optimal case  . . . . . . . . . . . . . . . . . . . . . .   8
-   5.  PvD characteristics description . . . . . . . . . . . . . . .   8
-   6.  Encapsulating PvDs in RAs . . . . . . . . . . . . . . . . . .   8
-   7.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .   8
-   8.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   8
-   9.  Security Considerations . . . . . . . . . . . . . . . . . . .   9
-   10. References  . . . . . . . . . . . . . . . . . . . . . . . . .   9
-     10.1.  Normative References . . . . . . . . . . . . . . . . . .   9
-     10.2.  Informative References . . . . . . . . . . . . . . . . .   9
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  10
+     2.2.  PvD and PvD instance  . . . . . . . . . . . . . . . . . .   3
+     2.3.  Identifying implicit PvDs . . . . . . . . . . . . . . . .   3
+     2.4.  Managing PvD lifecycle  . . . . . . . . . . . . . . . . .   5
+   3.  Options to configure hosts with PvDs  . . . . . . . . . . . .   7
+     3.1.  Unsolicited RAs . . . . . . . . . . . . . . . . . . . . .   7
+       3.1.1.  Sending all PvDs in every RA (A1) . . . . . . . . . .   7
+       3.1.2.  Sending subset of PvDs in every RA (A2) . . . . . . .   8
+       3.1.3.  Sending implicit PvD with a list of PvD IDs (A3)  . .   8
+       3.1.4.  Sending only implicit PvD (A4)  . . . . . . . . . . .   8
+     3.2.  Solicited RAs . . . . . . . . . . . . . . . . . . . . . .   8
+       3.2.1.  RS without any change (B1)  . . . . . . . . . . . . .   8
+       3.2.2.  RS with indication of PvD support (B2)  . . . . . . .   9
+       3.2.3.  RS with request for specific PvDs (B3)  . . . . . . .   9
+   4.  Implementation aspects  . . . . . . . . . . . . . . . . . . .   9
+   5.  Sequence of steps to configure PvD on a host  . . . . . . . .  10
+     5.1.  Implemented option  . . . . . . . . . . . . . . . . . . .  11
+     5.2.  Optimal case  . . . . . . . . . . . . . . . . . . . . . .  11
+   6.  PvD characteristics description . . . . . . . . . . . . . . .  11
+   7.  Encapsulating PvDs in RAs . . . . . . . . . . . . . . . . . .  11
+   8.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .  11
+   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  11
+   10. Security Considerations . . . . . . . . . . . . . . . . . . .  11
+   11. References  . . . . . . . . . . . . . . . . . . . . . . . . .  11
+     11.1.  Normative References . . . . . . . . . . . . . . . . . .  11
+     11.2.  Informative References . . . . . . . . . . . . . . . . .  12
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  12
 
 1.  Introduction
 
-   The purpose of this draft is to analyze different options on how RA/
-   RS messages can be used to configure multiple provisioning domains,
-   both implicit and explicit.  The draft lists options and arguments
-   pro and con each option and then selects specific ones for the
-   implementation.  While analyzing pros and cons we take into account
-   some real implementations and how they should be changed.
-
-1.1.  Requirements Language
-
-   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
-   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
-   document are to be interpreted as described in RFC 2119 [RFC2119].
+   The purpose of this draft is to present experiences gained while
+   trying to implement support for PVDs in the Linux operating system.
+   Two prototype implementations were done as a part of this endeavor,
+   one from scratch and another as a part of existing component
+   (NetworkManager).  The implementations themselves are described in a
+   separate document while this one is about topics independent from
+   particular system, i.e. more in line with the networking
+   standardization.
 
 
 
@@ -113,6 +113,12 @@ Gros, et al.              Expires May 26, 2016                  [Page 2]
 
 Internet-Draft          Configuring PvD using NDP          November 2015
 
+
+1.1.  Requirements Language
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in RFC 2119 [RFC2119].
 
 2.  Provisioning Domain characteristics
 
@@ -132,24 +138,60 @@ Internet-Draft          Configuring PvD using NDP          November 2015
    gateway address.  Note that multiple routers can send RAs with the
    _same_ PvD in it.  In such cases gateway addresses are merged.
 
-2.2.  Identifying implicit PvDs
+2.2.  PvD and PvD instance
+
+   In MIF WG documents the term "PvD" is used with two different
+   meanings.  The first one is a concrete set of parameters bound to a
+   specific interface, most notably a specific IP address that should be
+   used by host for its interface.  The second one is a more general and
+   encompases a set of PvD instances thus creating some kind of a PvD
+   class.  The characteristic of PvD (as opposed to PvD instance) is
+   that it contains parameters bound to a local network, i.e. it has
+   network prefix instead of a specific IP address.  Obviously there
+   could be other parameteres besides IP addresses that belong to PvD
+   instance, but the analysis wasn't done as a part of work that
+   produced this draft.  The distinction between PvD and PvD instance is
+   more visible in IPv6 than in IPv4 due to the way they are configured
+   on end hosts.
+
+   In this document we'll use terms "PvD" and "PvD instance" with a
+   meaning as described in the previous paragraph.
+
+2.3.  Identifying implicit PvDs
 
    In this section we discuss how PvD aware clients should identify
-   implicit PvDs they receive.  Note that there is possibility to allow
-   PvD ID option to be sent as any other option and in that way to "tag"
-   configuration options within RA or a DHCP message.  In this section
-   we are concerned with a problem when configuration options are
-   received witouth such an option or any other indication of the PvDs
-   identity.
+   implicit PvDs they receive.  "Implicit PvDs" are those that contain
+   no PvD related identification information like specific options with
 
-   The idea is to generate identifier of a set of configuration options
-   that uniquely identify a PvD.  In other words, whenever any element
-   of the given set changes, that should be an indication of
-   connectivity change.  This set can then be hashed in order to produce
-   UUID that would be used as PvD ID of the given connection.
-   Furhtermore, the process of generating PvD ID could be prescribed so
-   that all PvD aware nodes, receiving the same set of configuration
-   parameters, would assign it the same PvD ID.
+
+
+Gros, et al.              Expires May 26, 2016                  [Page 3]
+
+Internet-Draft          Configuring PvD using NDP          November 2015
+
+
+   identifiers, or container options, etc.  In this class are all legacy
+   mechanisms, like DHCP, RA, etc.
+
+   The idea is to generate stable identifier independent of PvD instance
+   based on a set of configuration options that uniquely identify a PvD.
+   This would allow PvD aware applications to be more uniform in a sense
+   that they don't have any special functionality (or it is minimized)
+   for support of legacy configurations.  The requirements are also:
+
+      Two independent clients, or client and server, generate the same
+      PvD ID and in that way it is possible to do more specific
+      configurations based on PvD ID.  A more specific configuration
+      might be, for example, what is a purpose of some specific PvD.
+
+      The process of generating PvD ID should allow clients to detect
+      connectivity changes, i.e. to know when they are connected to
+      another network, or when connectivity of the existing network
+      changed.
+
+      The process of generating PvD ID should be such that all PvD aware
+      nodes, receiving the same set of configuration parameters (i.e.
+      the same implicit PvD), would assign it the same PvD ID.
 
    The following elements could comprise a set of parameters that
    uniquely identify PvD:
@@ -161,14 +203,6 @@ Internet-Draft          Configuring PvD using NDP          November 2015
    o  Addresses of DNS servers.
 
    o  Domain names served by DNS servers.
-
-
-
-
-Gros, et al.              Expires May 26, 2016                  [Page 3]
-
-Internet-Draft          Configuring PvD using NDP          November 2015
-
 
    Time values are not take in into account while determining to which
    PvD given configuration parameters belong to.  Also, the following
@@ -183,6 +217,15 @@ Internet-Draft          Configuring PvD using NDP          November 2015
 
    o  Different lifetimes.
 
+
+
+
+
+Gros, et al.              Expires May 26, 2016                  [Page 4]
+
+Internet-Draft          Configuring PvD using NDP          November 2015
+
+
    Note that in some cases there could be the same set of network(!)
    configuration parameters used on multipe different networks.  This is
    the case with IPv4 private space in which IP network mask, gateway
@@ -193,46 +236,87 @@ Internet-Draft          Configuring PvD using NDP          November 2015
    use of private addresses and/or MAC addresses when generating
    specific addresses.
 
-2.3.  Managing PvD lifecycle
+   To generate PvD ID from the set of configuration parameters some form
+   of hashing over precisely defined set of configuration options might
+   be used.  UUID algorithm might be used as well.
+
+2.4.  Managing PvD lifecycle
 
    PvDi lifecycle consists of the step when they are created and
-   communicated to the nodes, used with the nodes, and finally removed
+   communicated to the nodes, used within the nodes, and finally removed
    when the node loses connectivity.  How PvDs are communicated to nodes
    is discussed in Section 3.  Here, we are concerned with a node
    behavior with respect to PvDs.  More specifically, here are some the
-   questions:
+   questions that should be answered by defining node behavior:
 
-   o  PvDs are received through some interface.  Probably they should be
-      bound to this interface in a sense that when the interface stops
-      PvDs should disappear.
+   o  PvDs are received through an interface.  And very likely they
+      should be bound to this interface only, or more generally to the
+      network on which they were received.  This also means that when
+      the interface stops working, PvDs received on the same interface
+      should disappear too.  The question is what should happen if the
+      "main" implicit PvD dissapers?  Should all related PvDs be removed
+      too?
 
    o  Should applications know about relationship between PvDs and
       interfaces, or should they only know for PvDs while some more
-      advanced applications would know for the connection?
+      advanced applications would know for the connection?  In other
+      words, when an PvD aware application requests information about
+      available PvDs, should it also receive information on which
+      interfaces those PvDs were received?  Should returned PvDs be
+      grouped by interfaces they were received?  Or should they be
+      returned flat, without any information about interfaces they are
+      bound to?
 
    o  When a node first time learns about PvD, how long is this
       information retained?  Until connection ends, or forever with some
-      indication that PvD isn't active?
+      indication that PvD isn't active?  Note that this doesn't mean
+      that PvDs is used after connection ends, it only means that
+      applications can find out about PvDs even though they are not
+      active.  Presently, this is how information about APs in wireless
+
+
+
+
+Gros, et al.              Expires May 26, 2016                  [Page 5]
+
+Internet-Draft          Configuring PvD using NDP          November 2015
+
+
+      networks behave, i.e. they are all remembered.  But the behavior
+      in wired networks is different.
 
    o  Suppose that on a single link there is implicit PvD and at least
       one explicit link.  What should node do when implicit PvD
       disappears but explicit is stil present?  Could this happen?
 
+   o  If we take approach of sending PvD configuration options via RA
+      messages, how can router remove a specific PvD?  The only
+      possibility at the moment is to send all the options with lifetime
+      set to zero.  The problem is that not all options support lifetime
+      so it is not possible to only remove a specific explicit PvD.
 
+   o  There might be a cases when two PvDs have to be merged.  For
+      example, if they have to be used on a same interface.  Should
+      there be a set of rules that govern the merger?  NetworkManager
+      currently merges all configurations in root network namespace.
+      Note that there are two different mergers.  One that merges
+      interface specific configuration data and the another one that
+      merges node specific configuration data (e.g.  DNS addresses,
+      default routers).
 
+   o  From the management perspective, there is a possibility of
+      proliferation of IPv6 addresses used by a node.  Should this be
+      bound, or controlled in some way?
 
-Gros, et al.              Expires May 26, 2016                  [Page 4]
-
-Internet-Draft          Configuring PvD using NDP          November 2015
-
-
-   o  How can router remove a specific PvD?  The only possibility is to
-      send all the options with lifetime set to zero.  The problem is
-      that not all options support lifetime.
+   o  How to handle multiple DHCP servers on a local network (or
+      accessible via DHCP relay) serving different PvDs?  Currently, a
+      node selects one DHCP server and ignores others.  So, using
+      current mechanisms there is no way a node might configure multiple
+      PvDs from multiple DHCP servers.
 
    Some questions are not specific for PvDs but are also valid for NDP
    in general so they might already have an answer.  Still, for
-   completness and until we figure out answers, here are they:
+   completness and until we figure out answers, here they are:
 
       There are multiple lifetimes in RA message, and in PvD in
       particular.  What if one element of PvD times out, others not?
@@ -243,6 +327,16 @@ Internet-Draft          Configuring PvD using NDP          November 2015
       then in the following message some parameters from the first
       message are missing?  How should implementation react in that
       case?
+
+
+
+
+
+
+Gros, et al.              Expires May 26, 2016                  [Page 6]
+
+Internet-Draft          Configuring PvD using NDP          November 2015
+
 
 3.  Options to configure hosts with PvDs
 
@@ -275,13 +369,6 @@ Internet-Draft          Configuring PvD using NDP          November 2015
       included.  If the host doesn't include option to indicate PvD
       support, the router doesn't send any PvDs.
 
-
-
-Gros, et al.              Expires May 26, 2016                  [Page 5]
-
-Internet-Draft          Configuring PvD using NDP          November 2015
-
-
    o  Option B3.  When host sends RS it can include a list of PvD IDs
       and in that way requests information about specific PvD.  There
       could be a wildcard PvD ID that signals to router that every known
@@ -299,6 +386,13 @@ Internet-Draft          Configuring PvD using NDP          November 2015
 
    Pros of this case is simplicity of implementation.  No change in RS
    needed.
+
+
+
+Gros, et al.              Expires May 26, 2016                  [Page 7]
+
+Internet-Draft          Configuring PvD using NDP          November 2015
+
 
    Cons of this case is that RA message size might grow and make the
    system inefficient.  This can be particular problem in wireless
@@ -329,15 +423,6 @@ Internet-Draft          Configuring PvD using NDP          November 2015
    that clients that receive RA know that they should request PvDs
    separately.
 
-
-
-
-
-Gros, et al.              Expires May 26, 2016                  [Page 6]
-
-Internet-Draft          Configuring PvD using NDP          November 2015
-
-
 3.2.  Solicited RAs
 
    Note that in the case of hosts asking for specific PvDs routers that
@@ -353,6 +438,17 @@ Internet-Draft          Configuring PvD using NDP          November 2015
 
    This case fits well with the option A1 and option A2.  In case of the
    option A2 it incurrs one additional round-trip time!
+
+
+
+
+
+
+
+Gros, et al.              Expires May 26, 2016                  [Page 8]
+
+Internet-Draft          Configuring PvD using NDP          November 2015
+
 
 3.2.2.  RS with indication of PvD support (B2)
 
@@ -385,15 +481,6 @@ Internet-Draft          Configuring PvD using NDP          November 2015
    o  Only requested PvD(s) is sent in the RA.  In case of wildcard PvD
       ID every known PvD ID to a router is sent.
 
-
-
-
-
-Gros, et al.              Expires May 26, 2016                  [Page 7]
-
-Internet-Draft          Configuring PvD using NDP          November 2015
-
-
    o  Only requested PvD(s) is sent in the RA.  In case of wildcard PvD
       ID subset of known PvD IDs to a router are sent.  Others must be
       requested explicitly.
@@ -404,31 +491,98 @@ Internet-Draft          Configuring PvD using NDP          November 2015
 
    In case wildcard PvD ID is used option A4 is also possible.
 
-4.  Sequence of steps to configure PvD on a host
+4.  Implementation aspects
+
+   While implementation aspects are system dependent, certain general
+   characteristics could be discussed without going into specific
+   implementations.  The question is should this be touched by
+   standardization process?  Here we list some of the characteristics
+   and possibilities, but leave the question of standardization open.
+
+
+
+Gros, et al.              Expires May 26, 2016                  [Page 9]
+
+Internet-Draft          Configuring PvD using NDP          November 2015
+
+
+   In general, some kind of a control of PvD usage is necessary, i.e.
+   it is necessary to be able to control which configuration parameters
+   applications will use (e.g. source IP addresses, DNS servers,
+   routes).  This can be achieved via two primary mechanisms:
+
+      By isolating applications and providing them with only a subset of
+      PvDs which application should use.  Note that the exact mechanism
+      for isolation might vary, depending on the underlying system's
+      abilities.  In case of Linux operating system the isolation can be
+      achieved using the following mechanisms:
+
+
+
+         Network namespaces.
+
+         Virtual router function available since Linux kernel 4.4.
+
+      Assigning all the configuration options at once and then using
+      some mechanism to select certain subset based on the application
+      or a thread.
+
+      For example, in Fedora Linux this is partially done by
+      NetworkManager which all the configuration options received via a
+      single interface merges and assigns to the given interface.  It is
+      written "partially" because there is no mechanism now that would
+      allow control on which configuration parameters are used by
+      applications.  Basically the mechanism exists in a form of IPv6
+      source/destination address selection but this mechanism doesn't
+      take into account some advanced features of PvDs like
+      accessibility to a certain services.
+
+   In the end, at least that was so in the prototype implementations,
+   the combination of the two approaches was used, i.e. there was
+   isolation but within each isolated environment several PvDs were
+   merged together.
+
+   The questions that are relevant for the standardization are:
+
+
+
+5.  Sequence of steps to configure PvD on a host
+
+   When PvDs are received by a node there are certain questions that
+   should be thought of
+
+
+
+
+
+
+
+Gros, et al.              Expires May 26, 2016                 [Page 10]
+
+Internet-Draft          Configuring PvD using NDP          November 2015
+
+
+5.1.  Implemented option
 
    TBD.
 
-4.1.  Implemented option
+5.2.  Optimal case
 
    TBD.
 
-4.2.  Optimal case
-
-   TBD.
-
-5.  PvD characteristics description
+6.  PvD characteristics description
 
    One very important question is how will clients know for what
    purposes the specific PvD is used for.  In this section we list
    possible options to achieve that.
 
-6.  Encapsulating PvDs in RAs
+7.  Encapsulating PvDs in RAs
 
-7.  Acknowledgements
+8.  Acknowledgements
 
    TBW.
 
-8.  IANA Considerations
+9.  IANA Considerations
 
    This memo includes no request to IANA.
 
@@ -439,30 +593,30 @@ Internet-Draft          Configuring PvD using NDP          November 2015
    above).  If there are no requirements for IANA, the section will be
    removed during conversion into an RFC by the RFC Editor.
 
-
-
-
-
-
-
-Gros, et al.              Expires May 26, 2016                  [Page 8]
-
-Internet-Draft          Configuring PvD using NDP          November 2015
-
-
-9.  Security Considerations
+10.  Security Considerations
 
    All drafts are required to have a security considerations section.
    See RFC 3552 [RFC3552] for a guide.
 
-10.  References
+11.  References
 
-10.1.  Normative References
+11.1.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
               DOI 10.17487/RFC2119, March 1997,
               <http://www.rfc-editor.org/info/rfc2119>.
+
+
+
+
+
+
+
+Gros, et al.              Expires May 26, 2016                 [Page 11]
+
+Internet-Draft          Configuring PvD using NDP          November 2015
+
 
    [RFC6418]  Blanchet, M. and P. Seite, "Multiple Interfaces and
               Provisioning Domains Problem Statement", RFC 6418,
@@ -477,7 +631,7 @@ Internet-Draft          Configuring PvD using NDP          November 2015
               Architecture", RFC 7556, DOI 10.17487/RFC7556, June 2015,
               <http://www.rfc-editor.org/info/rfc7556>.
 
-10.2.  Informative References
+11.2.  Informative References
 
    [I-D.ietf-mif-mpvd-dhcp-support]
               Krishnan, S., Korhonen, J., and S. Bhandari, "Support for
@@ -487,24 +641,14 @@ Internet-Draft          Configuring PvD using NDP          November 2015
    [I-D.ietf-mif-mpvd-ndp-support]
               Korhonen, J., Krishnan, S., and S. Gundavelli, "Support
               for multiple provisioning domains in IPv6 Neighbor
-              Discovery Protocol", draft-ietf-mif-mpvd-ndp-support-02
-              (work in progress), October 2015.
+              Discovery Protocol", draft-ietf-mif-mpvd-ndp-support-03
+              (work in progress), February 2016.
 
    [I-D.narten-iana-considerations-rfc2434bis]
               Narten, T. and H. Alvestrand, "Guidelines for Writing an
               IANA Considerations Section in RFCs", draft-narten-iana-
               considerations-rfc2434bis-09 (work in progress), March
               2008.
-
-
-
-
-
-
-Gros, et al.              Expires May 26, 2016                  [Page 9]
-
-Internet-Draft          Configuring PvD using NDP          November 2015
-
 
    [RFC2629]  Rose, M., "Writing I-Ds and RFCs using XML", RFC 2629,
               DOI 10.17487/RFC2629, June 1999,
@@ -516,6 +660,19 @@ Internet-Draft          Configuring PvD using NDP          November 2015
               <http://www.rfc-editor.org/info/rfc3552>.
 
 Authors' Addresses
+
+
+
+
+
+
+
+
+
+Gros, et al.              Expires May 26, 2016                 [Page 12]
+
+Internet-Draft          Configuring PvD using NDP          November 2015
+
 
    Stjepan Gros (editor)
    University of Zagreb
@@ -557,4 +714,15 @@ Authors' Addresses
 
 
 
-Gros, et al.              Expires May 26, 2016                 [Page 10]
+
+
+
+
+
+
+
+
+
+
+
+Gros, et al.              Expires May 26, 2016                 [Page 13]

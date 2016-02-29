@@ -119,11 +119,14 @@
 
     <abstract>
       <t>
-      The purpose of this draft is to analyze different options on
-      how RA/RS can be used to configure multiple provisioning domains,
-      both implicit and explicit. The draft lists options and arguments
-      pro and con each option and then selects specific ones for the
-      implementation.
+      The purpose of this draft is to present experiences gained while
+      trying to implement support for PVDs in the Linux operating
+      system. Two prototype implementations were done as a part of this 
+      endeavor, one from scratch and another as a part of existing
+      component (NetworkManager). The implementations themselves are
+      described in a separate document while this one is about topics
+      independent from particular system, i.e. more in line with the
+      networking standardization.
       </t>
     </abstract>
   </front>
@@ -133,6 +136,18 @@
     <section title="Introduction">
 
       <t>
+      The purpose of this draft is to present experiences gained while
+      trying to implement support for PVDs in the Linux operating
+      system. Two prototype implementations were done as a part of this 
+      endeavor, one from scratch and another as a part of existing
+      component (NetworkManager). The implementations themselves are
+      described in a separate document while this one is about topics
+      independent from particular system, i.e. more in line with the
+      networking standardization.
+      </t>
+
+<!--
+      <t>
       The purpose of this draft is to analyze different options on
       how RA/RS messages can be used to configure multiple provisioning
       domains, both implicit and explicit. The draft lists options and
@@ -140,6 +155,7 @@
       for the implementation. While analyzing pros and cons we take into
       account some real implementations and how they should be changed.
       </t>
+-->
 
       <section title="Requirements Language">
         <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -153,22 +169,46 @@
 
       <section title="PvD content">
 
-      <t>
-      It is important to know what information belongs to a PvD. Namely,
-      if there is PvD container option that holds all information belonging
-      to a specific PvD then it is clear that information contained in the
-      header of the RA message couldn't be included within container
-      options. Information such as gatway addres, hop limit, router lifetime
-      and timers, and flaggs M and O must be common to all content of the RA.
-      </t>
+        <t>
+        It is important to know what information belongs to a PvD. Namely,
+        if there is PvD container option that holds all information belonging
+        to a specific PvD then it is clear that information contained in the
+        header of the RA message couldn't be included within container
+        options. Information such as gatway addres, hop limit, router lifetime
+        and timers, and flaggs M and O must be common to all content of the RA.
+        </t>
 
-      <t>
-      PvD has to contain gateway address, one or more. The problem is that this
-      information isn't an option and thus can not be embedded within a
-      PvD container. So, all PvDs sent by some router will have the same gateway
-      address. Note that multiple routers can send RAs with the _same_ PvD in
-      it. In such cases gateway addresses are merged.
-      </t>
+        <t>
+        PvD has to contain gateway address, one or more. The problem is that this
+        information isn't an option and thus can not be embedded within a
+        PvD container. So, all PvDs sent by some router will have the same gateway
+        address. Note that multiple routers can send RAs with the _same_ PvD in
+        it. In such cases gateway addresses are merged.
+        </t>
+
+      </section>
+
+      <section title="PvD and PvD instance">
+
+        <t>
+        In MIF WG documents the term "PvD" is used with two different meanings.
+        The first one is a concrete set of parameters bound to a specific
+        interface, most notably a specific IP address that should be used by host
+        for its interface. The second one is a more general and encompases a set
+        of PvD instances thus creating some kind of a PvD class. The characteristic
+        of PvD (as opposed to PvD instance) is that it contains parameters bound
+        to a local network, i.e. it has network prefix instead of a specific IP
+        address. Obviously there could be other parameteres besides IP addresses
+        that belong to PvD instance, but the analysis wasn't done as a part of
+        work that produced this draft. The distinction between PvD and PvD
+        instance is more visible in IPv6 than in IPv4 due to the way they are
+        configured on end hosts.
+        </t>
+
+        <t>
+        In this document we'll use terms "PvD" and "PvD instance" with a meaning
+        as described in the previous paragraph.
+        </t>
 
       </section>
 
@@ -176,25 +216,44 @@
 
         <t>
         In this section we discuss how PvD aware clients should identify
-        implicit PvDs they receive. Note that there is possibility to
-        allow PvD ID option to be sent as any other option and in that
-        way to "tag" configuration options within RA or a DHCP message.
-        In this section we are concerned with a problem when configuration
-        options are received witouth such an option or any other indication
-        of the PvDs identity.
+        implicit PvDs they receive. "Implicit PvDs" are those that contain
+        no PvD related identification information like specific options
+        with identifiers, or container options, etc. In this class are all
+        legacy mechanisms, like DHCP, RA, etc.
         </t>
 
         <t>
-        The idea is to generate identifier of a set of configuration options
-        that uniquely identify a PvD. In other words, whenever any element
-        of the given set changes, that should be an indication of
-        connectivity change. This set can then be hashed in order to
-        produce UUID that would be used as PvD ID of the given
-        connection. Furhtermore, the process of generating PvD ID
-        could be prescribed so that all PvD aware nodes, receiving the
-        same set of configuration parameters, would assign it the 
-        same PvD ID.
+        The idea is to generate stable identifier independent of PvD
+        instance based on a set of configuration options that uniquely
+        identify a PvD. This would allow PvD aware applications to
+        be more uniform in a sense that they don't have any special
+        functionality (or it is minimized) for support of legacy
+        configurations. The requirements are also:
         </t>
+
+        <t><list>
+
+          <t>
+          Two independent clients, or client and server, generate the
+          same PvD ID and in that way it is possible to do more specific
+          configurations based on PvD ID. A more specific configuration
+          might be, for example, what is a purpose of some specific PvD.
+          </t>
+
+          <t>
+          The process of generating PvD ID should allow clients to detect
+          connectivity changes, i.e. to know when they are connected to
+          another network, or when connectivity of the existing network
+          changed.
+          </t>
+
+          <t>
+          The process of generating PvD ID should be such that all PvD
+          aware nodes, receiving the same set of configuration parameters
+          (i.e. the same implicit PvD), would assign it the same PvD ID.
+          </t>
+
+        </list></t>
 
         <t>
         The following elements could comprise a set of parameters that
@@ -260,37 +319,59 @@
         when generating specific addresses.
         </t>
 
+        <t>
+        To generate PvD ID from the set of configuration parameters some 
+        form of hashing over precisely defined set of configuration options
+        might be used. UUID algorithm might be used as well.
+        </t>
+
       </section>
 
       <section title="Managing PvD lifecycle">
 
         <t>
 	PvDi lifecycle consists of the step when they are created and
-        communicated to the nodes, used with the nodes, and finally
+        communicated to the nodes, used within the nodes, and finally
 	removed when the node loses connectivity. How PvDs are communicated
         to nodes is discussed in <xref target="client_configuration" />.
         Here, we are concerned with a node behavior with respect to PvDs.
-        More specifically, here are some the questions:
+        More specifically, here are some the questions that should be
+        answered by defining node behavior:
         </t>
 
         <t><list style="symbols">
 
           <t>
-          PvDs are received through some interface. Probably they should
-          be bound to this interface in a sense that when the interface
-          stops PvDs should disappear.
+          PvDs are received through an interface. And very likely they
+          should be bound to this interface only, or more generally to
+          the network on which they were received. This also means that
+          when the interface stops working, PvDs received on the same
+          interface should disappear too. The question is what should
+          happen if the "main" implicit PvD dissapers? Should all related
+          PvDs be removed too?
           </t>
 
           <t>
           Should applications know about relationship between PvDs and
           interfaces, or should they only know for PvDs while some more
-          advanced applications would know for the connection?
+          advanced applications would know for the connection? In other
+          words, when an PvD aware application requests information about
+          available PvDs, should it also receive information on which
+          interfaces those PvDs were received? Should returned PvDs be
+          grouped by interfaces they were received? Or should they be
+          returned flat, without any information about interfaces they are
+          bound to?
           </t>
 
           <t>
           When a node first time learns about PvD, how long is this
           information retained? Until connection ends, or forever with
-          some indication that PvD isn't active?
+          some indication that PvD isn't active? Note that this doesn't
+          mean that PvDs is used after connection ends, it only means
+          that applications can find out about PvDs even though they are
+          not active. Presently, this is how information about APs in
+          wireless networks behave, i.e. they are all remembered. But
+          the behavior in wired networks is different.
           </t>
 
           <t>
@@ -300,9 +381,35 @@
           </t>
 
           <t>
-          How can router remove a specific PvD? The only possibility is to send
-          all the options with lifetime set to zero. The problem is that not
-          all options support lifetime.
+          If we take approach of sending PvD configuration options via
+          RA messages, how can router remove a specific PvD? The only
+          possibility at the moment is to send all the options with lifetime
+          set to zero. The problem is that not all options support lifetime
+          so it is not possible to only remove a specific explicit PvD.
+          </t>
+
+          <t>
+          There might be a cases when two PvDs have to be merged. For example,
+          if they have to be used on a same interface. Should there be a set
+          of rules that govern the merger? NetworkManager currently merges all
+          configurations in root network namespace. Note that there are two
+          different mergers. One that merges interface specific configuration
+          data and the another one that merges node specific configuration data
+          (e.g. DNS addresses, default routers).
+          </t>
+
+          <t>
+          From the management perspective, there is a possibility of
+          proliferation of IPv6 addresses used by a node. Should this be
+          bound, or controlled in some way?
+          </t>
+
+          <t>
+          How to handle multiple DHCP servers on a local network (or accessible
+          via DHCP relay) serving different PvDs? Currently, a node selects
+          one DHCP server and ignores others. So, using current mechanisms
+          there is no way a node might configure multiple PvDs from multiple
+          DHCP servers.
           </t>
 
         </list></t>
@@ -310,7 +417,7 @@
 	<t>
         Some questions are not specific for PvDs but are also valid for NDP
         in general so they might already have an answer. Still, for completness
-        and until we figure out answers, here are they:
+        and until we figure out answers, here they are:
 	</t>
 
         <t><list>
@@ -575,10 +682,90 @@
 
     </section>
 
+    <section title="Implementation aspects">
+
+      <t>
+      While implementation aspects are system dependent, certain general
+      characteristics could be discussed without going into specific
+      implementations. The question is should this be touched by
+      standardization process? Here we list some of the characteristics
+      and possibilities, but leave the question of standardization open.
+      </t>
+
+      <t>
+      In general, some kind of a control of PvD usage is necessary, i.e.
+      it is necessary to be able to control which configuration parameters
+      applications will use (e.g. source IP addresses, DNS servers,
+      routes). This can be achieved via two primary mechanisms:
+      </t>
+
+      <t><list>
+
+        <t>
+        By isolating applications and providing them with only a subset
+        of PvDs which application should use. Note that the exact mechanism
+        for isolation might vary, depending on the underlying system's
+        abilities. In case of Linux operating system the isolation can
+        be achieved using the following mechanisms:
+        </t>
+
+        <t><list>
+
+          <t>
+          Network namespaces.
+          </t>
+
+          <t>
+          Virtual router function available since Linux kernel 4.4.
+          </t>
+
+        </list></t>
+
+        <t>
+        Assigning all the configuration options at once and then using
+        some mechanism to select certain subset based on the application
+        or a thread.
+        </t>
+
+        <t>
+        For example, in Fedora Linux this is partially done by NetworkManager
+        which all the configuration options received via a single interface
+        merges and assigns to the given interface. It is written "partially"
+        because there is no mechanism now that would allow control on which
+        configuration parameters are used by applications. Basically the
+        mechanism exists in a form of IPv6 source/destination address selection 
+        but this mechanism doesn't take into account some advanced features
+        of PvDs like accessibility to a certain services.
+        </t>
+
+      </list></t>
+
+      <t>
+      In the end, at least that was so in the prototype implementations,
+      the combination of the two approaches was used, i.e. there was isolation
+      but within each isolated environment several PvDs were merged
+      together.
+      </t>
+
+      <t>
+      The questions that are relevant for the standardization are:
+      </t>
+
+      <t><list>
+
+        <t>
+        
+        </t>
+
+      </list></t>
+
+    </section>
+
     <section title="Sequence of steps to configure PvD on a host">
 
       <t>
-      TBD.
+      When PvDs are received by a node there are certain questions that
+      should be thought of 
       </t>
 
       <section title="Implemented option">
