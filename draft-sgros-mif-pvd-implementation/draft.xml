@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!-- This template is for creating an Internet Draft using xml2rfc,
+     which is available here: http://xml.resource.org. -->
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd" [
+<!-- One method to get references from the online citation libraries.
+     There has to be one entity for each item to be referenced.
+     An alternate method (rfc include) is described in the references. -->
+
+<!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
+<!ENTITY RFC2629 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2629.xml">
+<!ENTITY RFC3552 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3552.xml">
+<!ENTITY I-D.narten-iana-considerations-rfc2434bis SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.narten-iana-considerations-rfc2434bis.xml">
+<!ENTITY I-D.ietf-mif-mpvd-dhcp-support SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.ietf-mif-mpvd-dhcp-support.xml">
+<!ENTITY I-D.ietf-mif-mpvd-ndp-support SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.ietf-mif-mpvd-ndp-support.xml">
+
+<!ENTITY RFC6418 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6418.xml">
+<!ENTITY RFC6419 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6419.xml">
+<!ENTITY RFC7556 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.7556.xml">
+]>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+<!-- used by XSLT processors -->
+<!-- For a complete list and description of processing instructions (PIs),
+     please see http://xml.resource.org/authoring/README.html. -->
+<!-- Below are generally applicable Processing Instructions (PIs) that most I-Ds might want to use.
+     (Here they are set differently than their defaults in xml2rfc v1.32) -->
+<?rfc strict="yes" ?>
+<!-- give errors regarding ID-nits and DTD validation -->
+<!-- control the table of contents (ToC) -->
+<?rfc toc="yes"?>
+<!-- generate a ToC -->
+<?rfc tocdepth="4"?>
+<!-- the number of levels of subsections in ToC. default: 3 -->
+<!-- control references -->
+<?rfc symrefs="yes"?>
+<!-- use symbolic references tags, i.e, [RFC2119] instead of [1] -->
+<?rfc sortrefs="yes" ?>
+<!-- sort the reference entries alphabetically -->
+<!-- control vertical white space
+     (using these PIs as follows is recommended by the RFC Editor) -->
+<?rfc compact="yes" ?>
+<!-- do not start each main section on a new page -->
+<?rfc subcompact="no" ?>
+<!-- keep one blank line between list items -->
+<!-- end of list of popular I-D processing instructions -->
+<rfc category="info" docName="draft-sgros-dhcp-and-ipr-claim-analysis-00" ipr="trust200902">
+  <!-- category values: std, bcp, info, exp, and historic
+     ipr values: full3667, noModification3667, noDerivatives3667
+     you can add the attributes updates="NNNN" and obsoletes="NNNN"
+     they will automatically be output with "(if approved)" -->
+
+  <front>
+    <title abbrev="Configuring PvD using NDP">Implementation of PvD support</title>
+
+    <author fullname="Stjepan Gros"
+            initials="S." surname="Gros"
+            role="editor">
+      <organization>University of Zagreb</organization>
+      <address>
+        <postal>
+          <street>Unska 3</street>
+          <city>Zagreb</city>
+          <code>10000</code>
+          <country>HR</country>
+        </postal>
+        <phone></phone>
+        <email>stjepan.gros@fer.hr</email>
+      </address>
+    </author>
+
+    <author fullname="Leonardo Jelenkovic"
+            initials="L." surname="Jelenkovic"
+            >
+      <organization>University of Zagreb</organization>
+      <address>
+        <postal>
+          <street>Unska 3</street>
+          <city>Zagreb</city>
+          <code>10000</code>
+          <country>HR</country>
+        </postal>
+        <phone></phone>
+        <email>leonardo.jelenkovic@fer.hr</email>
+      </address>
+    </author>
+
+    <author fullname="Dejan Skvorc"
+            initials="D." surname="Skvorc"
+            >
+      <organization>University of Zagreb</organization>
+      <address>
+        <postal>
+          <street>Unska 3</street>
+          <city>Zagreb</city>
+          <code>10000</code>
+          <country>HR</country>
+        </postal>
+        <phone></phone>
+        <email>dejan.skvorc@fer.hr</email>
+      </address>
+    </author>
+
+    <date month="November" year="2015" day="23" />
+
+    <!-- Meta-data Declarations -->
+
+    <area>General</area>
+
+    <workgroup>Internet Engineering Task Force</workgroup>
+
+    <!-- WG name at the upperleft corner of the doc,
+         IETF is fine for individual submissions.
+	 If this element is not present, the default is "Network Working Group",
+         which is used by the RFC Editor as a nod to the history of the IETF. -->
+
+    <keyword>mpvd</keyword>
+    <keyword>ra</keyword>
+    <keyword>ndp</keyword>
+    <keyword>mif</keyword>
+    <keyword>implementation</keyword>
+
+    <abstract>
+      <t>
+      The purpose of this draft is to document two implementations that
+      tried to implement PvD architecture document. One implementation
+      was done from scratch while another is a part of an existing component
+      (NetworkManager).
+      </t>
+    </abstract>
+  </front>
+
+  <middle>
+
+    <section title="Introduction">
+
+      <t>
+      TBD.
+      </t>
+
+      <section title="Requirements Language">
+        <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+        "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+        document are to be interpreted as described in <xref
+        target="RFC2119">RFC 2119</xref>.</t>
+      </section>
+    </section>
+
+    <section title="pvd_man implementation">
+
+      <section title="Architecture">
+
+        <t>
+        Describe the architecture of the implementation and also
+        make a reference to the MIF architecture document.
+        </t>
+
+      </section>
+
+      <section title="Implementation details">
+
+        <t>
+        Present some key implementation details.
+        </t>
+
+      </section>
+
+      <section title="Experiences gained">
+
+        <t>
+        Present some experience gained from the implementation. What
+        do you think was good? What would you do differently if you
+        were to implement this again. What about language/environment,
+        was it good, what was bad?
+        </t>
+
+      </section>
+
+    </section>
+
+    <section title="NetworkManager implementation">
+
+      <t>
+      TBD.
+      </t>
+
+    </section>
+
+    <section title="Server component">
+
+      <t>
+      Write about changes in the radvd component.
+      </t>
+
+    </section>
+
+    <section anchor="Acknowledgements" title="Acknowledgements">
+      <t>
+      TBW.
+      </t>
+    </section>
+
+    <!-- Possibly a 'Contributors' section ... -->
+
+    <section anchor="IANA" title="IANA Considerations">
+      <t>This memo includes no request to IANA.</t>
+
+      <t>All drafts are required to have an IANA considerations section (see
+      <xref target="I-D.narten-iana-considerations-rfc2434bis">the update of
+      RFC 2434</xref> for a guide). If the draft does not require IANA to do
+      anything, the section contains an explicit statement that this is the
+      case (as above). If there are no requirements for IANA, the section will
+      be removed during conversion into an RFC by the RFC Editor.</t>
+    </section>
+
+    <section anchor="Security" title="Security Considerations">
+      <t>All drafts are required to have a security considerations section.
+      See <xref target="RFC3552">RFC 3552</xref> for a guide.</t>
+    </section>
+  </middle>
+
+  <!--  *****BACK MATTER ***** -->
+
+  <back>
+    <!-- References split into informative and normative -->
+
+    <!-- There are 2 ways to insert reference entries from the citation libraries:
+     1. define an ENTITY at the top, and use "ampersand character"RFC2629; here (as shown)
+     2. simply use a PI "less than character"?rfc include="reference.RFC.2119.xml"?> here
+        (for I-Ds: include="reference.I-D.narten-iana-considerations-rfc2434bis.xml")
+
+     Both are cited textually in the same manner: by using xref elements.
+     If you use the PI option, xml2rfc will, by default, try to find included files in the same
+     directory as the including file. You can also define the XML_LIBRARY environment variable
+     with a value containing a set of directories to search.  These can be either in the local
+     filing system or remote ones accessed by http (http://domain/dir/... ).-->
+
+    <references title="Normative References">
+      <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?-->
+
+      &RFC2119;
+
+      &RFC6418;
+
+      &RFC6419;
+
+      &RFC7556;
+
+    </references>
+
+    <references title="Informative References">
+      <!-- Here we use entities that we defined at the beginning. -->
+
+      &RFC2629;
+
+      &RFC3552;
+
+      &I-D.narten-iana-considerations-rfc2434bis;
+
+      &I-D.ietf-mif-mpvd-dhcp-support;
+
+      &I-D.ietf-mif-mpvd-ndp-support;
+
+      <!-- A reference written by an organization not a person. -->
+
+    </references>
+
+  </back>
+</rfc>
