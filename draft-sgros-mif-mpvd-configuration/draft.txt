@@ -1,0 +1,224 @@
+
+
+
+
+Internet Engineering Task Force                             S. Gros, Ed.
+Internet-Draft                                             L. Jelenkovic
+Intended status: Informational                                 D. Skvorc
+Expires: September 10, 2016                         University of Zagreb
+                                                           March 9, 2016
+
+
+           Configuring Multiple Provisioning Domains in Nodes
+                 draft-sgros-mif-mpvd-configuration-00
+
+Abstract
+
+   In this draft we propose mechanisms for configuring multiple
+   provisioning domains in end hosts and also mechanisms for service
+   discovery by applications on end nodes.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at http://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on September 10, 2016.
+
+Copyright Notice
+
+   Copyright (c) 2016 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (http://trustee.ietf.org/license-info) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with respect
+   to this document.  Code Components extracted from this document must
+   include Simplified BSD License text as described in Section 4.e of
+   the Trust Legal Provisions and are provided without warranty as
+   described in the Simplified BSD License.
+
+
+
+
+Gros, et al.           Expires September 10, 2016               [Page 1]
+
+Internet-Draft               Configuring PvD                  March 2016
+
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
+     1.1.  Requirements Language . . . . . . . . . . . . . . . . . .   2
+   2.  pvd_man implementation  . . . . . . . . . . . . . . . . . . .   2
+   3.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .   2
+   4.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   2
+   5.  Security Considerations . . . . . . . . . . . . . . . . . . .   2
+   6.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   3
+     6.1.  Normative References  . . . . . . . . . . . . . . . . . .   3
+     6.2.  Informative References  . . . . . . . . . . . . . . . . .   3
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   3
+
+1.  Introduction
+
+   TBD.
+
+1.1.  Requirements Language
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in RFC 2119 [RFC2119].
+
+2.  pvd_man implementation
+
+3.  Acknowledgements
+
+   TBW.
+
+4.  IANA Considerations
+
+   This memo includes no request to IANA.
+
+   All drafts are required to have an IANA considerations section (see
+   the update of RFC 2434 [I-D.narten-iana-considerations-rfc2434bis]
+   for a guide).  If the draft does not require IANA to do anything, the
+   section contains an explicit statement that this is the case (as
+   above).  If there are no requirements for IANA, the section will be
+   removed during conversion into an RFC by the RFC Editor.
+
+5.  Security Considerations
+
+   All drafts are required to have a security considerations section.
+   See RFC 3552 [RFC3552] for a guide.
+
+
+
+
+
+
+
+Gros, et al.           Expires September 10, 2016               [Page 2]
+
+Internet-Draft               Configuring PvD                  March 2016
+
+
+6.  References
+
+6.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <http://www.rfc-editor.org/info/rfc2119>.
+
+6.2.  Informative References
+
+   [I-D.narten-iana-considerations-rfc2434bis]
+              Narten, T. and H. Alvestrand, "Guidelines for Writing an
+              IANA Considerations Section in RFCs", draft-narten-iana-
+              considerations-rfc2434bis-09 (work in progress), March
+              2008.
+
+   [RFC3552]  Rescorla, E. and B. Korver, "Guidelines for Writing RFC
+              Text on Security Considerations", BCP 72, RFC 3552,
+              DOI 10.17487/RFC3552, July 2003,
+              <http://www.rfc-editor.org/info/rfc3552>.
+
+Authors' Addresses
+
+   Stjepan Gros (editor)
+   University of Zagreb
+   Unska 3
+   Zagreb  10000
+   HR
+
+   Email: stjepan.gros@fer.hr
+
+
+   Leonardo Jelenkovic
+   University of Zagreb
+   Unska 3
+   Zagreb  10000
+   HR
+
+   Email: leonardo.jelenkovic@fer.hr
+
+
+
+
+
+
+
+
+
+
+
+Gros, et al.           Expires September 10, 2016               [Page 3]
+
+Internet-Draft               Configuring PvD                  March 2016
+
+
+   Dejan Skvorc
+   University of Zagreb
+   Unska 3
+   Zagreb  10000
+   HR
+
+   Email: dejan.skvorc@fer.hr
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Gros, et al.           Expires September 10, 2016               [Page 4]
