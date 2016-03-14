@@ -143,6 +143,48 @@
         document are to be interpreted as described in <xref
         target="RFC2119">RFC 2119</xref>.</t>
       </section>
+
+    </section>
+
+    <section title="Common implementation mechanism">
+
+      <t>
+      In this section we describe some common implementation concepts.
+      Basically, they follow from the preparation phase when different
+      approaches were analysed. 
+      </t>
+
+      <t>
+      First of, the implementations are all done on modern Linux operating
+      system, more specifically, Fedora Desktop distribution. The main
+      characteristic of this distribution is that the main IPC mechanism
+      is D-Bus. So, D-Bus is also used by the two implementations described
+      in this draft.
+      </t>
+
+      <t>
+      Next, in the analysis phase the implementations assessment was
+      done to determine which mechanisms to use with the main goal of
+      having control over the use of provisioning domains by applications.
+      In other words, the main issue was how to control which PvD will
+      an application use in the presence of multiple provisioning domains.
+      The problems we tried to address are well described in <xref
+      target="RFC6418">RFC 6418</xref>. The conclusion was that the
+      network namespaces are the most appropriate mechanism to control
+      application use of provisioning domains.
+      </t>
+
+      <t>
+      Still, while network namespaces were found to be the most appropriate
+      machanism for separation there is a big issue in that it is not possible
+      to have the same PvD instance in separate network namespaces. To get
+      around that issue multiple PvD instaces could be used by a single node.
+      Yet, this is not without the problems either. First, from the operational
+      perspective this leads to proliferation of IP addresses and to issues
+      with accountability. It is even a bigger issue on IPv4 networks that have
+      restricted number of PvD instances per each PvD.
+      </t>
+
     </section>
 
 <section title="PvD-manager Implementation">
@@ -564,8 +606,228 @@ From R2:
     <section title="NetworkManager implementation">
 
       <t>
-      TBD.
+      NetworkManager is a software component used in modern Linux
+      distributions to control network connections. It runs as a
+      daemon tracking and reacting to the network related events,
+      either those coming from the network (like, for example, Router
+      Advertisements) or those from the local system (e.g. attachment
+      of a new networking device). Furthermore, it exposes certain
+      methods and properties over D-Bus interface so that it can be
+      controlled by different clients, the most prominent being network
+      manager applet and nmcli command line tool.
       </t>
+
+      <t>
+      Due to its importance in the modern Linux distributions it was
+      valuable experience to try to implement PvDs within it. Yet,
+      NetworkManager is a very complex piece of a software that wasn't
+      designed with PvDs in mind so it wasn't straightforward task to
+      try to implement them and there were some difficulties that had
+      to be overcome. In the following text we'll first describe how
+      NetworkManager behaves now with respect to multiple PvDs, then
+      we'll describe one approach on how to add support for multiple
+      PvDs.
+      </t>
+
+      <section title="NetworkManager's Current Behavior">
+
+        <t>
+        In this section we describe how unmodified NetworkManager
+        behaves with respect to multiple provisioning domains.
+        </t>
+
+        <t>
+        First, we have to state that NetworkManager doesn't use network
+        namespaces, that is, everything is kept in one network namespace
+        that we'll call "root network namespace" or "main network namespace".
+        So, all devices and all the configuration parameters are in one place.
+        </t>
+
+        <t>
+        The situations in which NetworkManager handles multiple provisioning
+        domains are:
+        </t>
+
+        <t><list style="hanging" hangIndent="6">
+
+          <t hangText="VPN Connections.">
+          <vspace />
+          When user activates VPN connection upon successful establishment
+          of a connection, NetworkManager receives PvD instance for the given
+          VPN connection. In some cases after establishing VPN there is
+          virtual device present (e.g. OpenVPN), while in other cases there
+          are no new devices but only appropriate additions to the existing
+          IP packet processing path (e.g. IPsec). In any case, interface and
+          the associated PvD instance are assigned and present in the root
+          network namespace. Furthermore, DNS data is also merged with
+          existing data. It isn't hard to see that this mixing of PvD
+          instances might lead to very complex situations in which it is hard
+          to control which PvD instance will be used. One possibility to
+          control what will be accessible is default route. Namely, it is
+          possible to instruct NetworkManager not to install default route
+          via VPN PvD instance even though it was sent by VPN gateway.
+          </t>
+
+          <t hangText="Concurrent active wired and wireless connections.">
+          <vspace />
+          Again, like in the previous case, all the settings are mixed and
+          this mixing has a consequence of not be able to use the two
+          connections in parallel. Current policy that is enforced by
+          NetworkManager is to prefer wired connection for default route.
+          In other words, unless there are more specific routes that use
+          wireless connection, it will be not used while wired network
+          connection is used.
+          </t>
+
+          <t hangText="Multiple IPv6 routers on a local network.">
+          <vspace />
+          This is interesting use case even though it is not as common now.
+          Namely, there is a possibility that there are two IPv6 capable
+          routers on the local network that overlap in connectivity.
+          What NetworkManager will do in this case is that all PvDs received
+          in RAs will be merged together per device.
+          </t>
+
+          <t hangText="Multiple concurrent DNS servers on a local network.">
+          <vspace />
+          This is a final use case that isn't possible by the current
+          protocol design. Namely, DHCP offers received are treated as
+          alternative and there is no way to have multiple DNS servers
+          on a single local network.
+          </t>
+
+        </list></t>
+
+      </section>
+
+      <section title="The architecture and components">
+
+        <t>
+        We can describe NetworkManager in terms of static and runtime
+        architecture. The static architecture is reflected by the source
+        code organization. For the purpose of this draft will only
+        present NetworkManager itself, but take into account that there
+        are additional components, too. So, the NetworkManager's code is
+        in src/ directory of top-level NetworkManager directory. There
+        you'll find the following subdirectories:
+        </t>
+
+        <t><list style="hanging" hangIndent="6">
+
+          <t hangText="devices/">
+          <vspace />
+          Objects that control devices.
+          </t>
+
+          <t hangText="dhcp-manager/">
+          <vspace />
+          </t>
+
+          <t hangText="dns-manager/">
+          <vspace />
+          </t>
+
+          <t hangText="dnsmasq-manager/">
+          <vspace />
+          </t>
+
+          <t hangText="platform/">
+          <vspace />
+          </t>
+
+          <t hangText="ppp-manager/">
+          <vspace />
+          </t>
+
+          <t hangText="rdisc/">
+          <vspace />
+          </t>
+
+          <t hangText="settings/">
+          <vspace />
+          </t>
+
+          <t hangText="supplicant-manager/">
+          <vspace />
+          </t>
+
+          <t hangText="systemd/">
+          <vspace />
+          </t>
+
+          <t hangText="vpn-manager/">
+          <vspace />
+          </t>
+
+        </list></t>
+
+      </section>
+
+      <section title="Implementation">
+
+        <t>
+        To understand NetworkManager it is first necessary to understand
+        GObject system which is created so that it is possible to use
+        object oriented programming in the C programming language, and
+        also to allow easy integration with D-Bus.
+        </t>
+
+        <t>
+        The implementation of PvD support within NetworkManager was done
+        with the following requirements in mind:
+        </t>
+
+        <t><list>
+
+          <t>
+          For backwards compatibility there should be a root network
+          namespace which is handled by NetworkManager as before, i.e.
+          it contains all configurations received merged into one.
+          </t>
+
+          <t>
+          NetworkManager doesn't touch network namespaces created by
+          other applications, like for example different virtualization
+          solutions.
+          </t>
+
+        </list></t>
+
+        <t>
+        The main objects that NetworkManager is based on are devices,
+        connections and properties.
+        </t>
+
+        <section title="Network namespace management implementation">
+
+          <t>
+          To support network namespace management it was necessary to
+          add two objects: NMNetworkNamespaceController which is a
+          singleton object that is used to enumerate available
+          network namespaces, create a new one or remove existing
+          network namespace.
+          </t>
+
+          <t>
+          The second object introduced to allow NetworkManager support
+          network namespaces is NMNetns. For each network namespace
+          created by NetworkManager one NMNetns object is created. This
+          object has an interface exposed over D-Bus that allows one to
+          query all available devices within the network namespace, to
+          take device from some other network namespace and to activate
+          connections.
+          </t>
+
+        </section>
+
+        <section title="Provisioning domain support implementation">
+
+          <t>
+          </t>
+
+        </section>
+
+      </section>
 
     </section>
 
