@@ -719,8 +719,11 @@ From R2:
           Objects that control devices.
           </t>
 
+<!--
           <t hangText="dhcp-manager/">
           <vspace />
+          DHCP manager (object that controls DHCP clients) and an object/class
+          for each DHCP client supported.
           </t>
 
           <t hangText="dns-manager/">
@@ -730,23 +733,33 @@ From R2:
           <t hangText="dnsmasq-manager/">
           <vspace />
           </t>
+-->
 
           <t hangText="platform/">
           <vspace />
+          Platform specific code that isolates NetworkManager from specifics of
+          a certain operating system. The only supported platform at the time
+          this was written in Linux.
           </t>
 
+<!--
           <t hangText="ppp-manager/">
           <vspace />
           </t>
+-->
 
           <t hangText="rdisc/">
           <vspace />
+          Objects that are used to send/receive RA/RS messages. There is a
+          platform independent object and platform dependent objects. Platform
+          dependent objects do real receive/send events.
           </t>
 
           <t hangText="settings/">
           <vspace />
           </t>
 
+<!--
           <t hangText="supplicant-manager/">
           <vspace />
           </t>
@@ -754,12 +767,284 @@ From R2:
           <t hangText="systemd/">
           <vspace />
           </t>
+-->
 
           <t hangText="vpn-manager/">
           <vspace />
           </t>
 
         </list></t>
+
+      </section>
+
+      <section title="Options to support PvDs in NetworkManager">
+
+        <t>
+        As always, the same goal can be achieved in multiple ways,
+        so here are the options on how PvDs can be implemented within
+        NM. Basically, there are two main approaches: first, existing
+        objects can be enhanced so that they can represent PvDs or a
+        completely new object can be introduced.
+        </t>
+
+        <section title="Using NMSettingsConnection object to store PvD and PvD instance">
+
+          <t>
+          Each network connection (which is not the same as PvD or
+          PvD instance) is stored in NMSettingsConnection object.
+          Those objects are generated from static files or dynamically
+          during NetworkManager's execution. NMSettingsConnection
+          objects are initialized from the following sources:
+          </t>
+
+          <t>
+          Distribution configuration files. System dependent network
+          configuration files (e.g. /etc/sysconfig/network-scripts for
+          RHEL based systems) are read by NM via plugins and
+          NMSettingsConnection objects are created as a result.
+          </t>
+ 
+          <t>
+          Network manager specific configuration. NetworkManager has
+          its own configuration files that are stored in
+          /etc/NetworkManager/system-connections/.
+          </t>
+
+          <t>
+          Dynamically created configurations. While running, NetworkManager
+          allows new configurations to be created via D-Bus interface.
+          </t>
+
+          <t>
+          Note that NetworkManager has a concept of profiles that are
+          used in the case of Wired networks. Basically, those are
+          settings which are not bound to any specific network interface.
+          Profiles can have 802.1x type of credentials assigned to them.
+          </t>
+
+          <t>
+          So, the idea of integrating PvDs into NetworkManager is for
+          each new PvD or PvD instance to create a new
+          NMSettingsConnection object. The modification to
+          NMSettingsConnection should be extended with PvD ID parameter.
+          </t>
+
+          <t>
+          There are several potential problems with this approach:
+          </t>
+
+          <t><list>
+
+            <t>
+            There is a difference between NMSettingsConnection on the
+            one hand, and PvD and PvD instance on the other hand. For
+            example, some NMSettingsConnection defines a network
+            connection that should be configured using DHCP and in
+            that case the NMSettingsConnection isn't PvD nor PvD
+            instance. On the other hand, NMSettingsConnection can
+            be the same as PvD instance. This is the case with static
+            IPv4 configurations when a user specifies concrete IP
+            addresses. Finally, NMSettingsConnection can be PvD only
+            in the case of IPv6 when host part is generated from MAC
+            address.
+            </t>
+
+            <t>
+            When PvDs and PvD instances are received they are valid
+            only for the interface on which they are received. But,
+            a user can request any NMSettingsConnection object to be
+            activated on any interface which isn't possible.
+            </t>
+
+            <t>
+            Also, this can create confusion. Take for example
+            preconfigured NMSettingsConnection which is now treated
+            as PvD with a specific PvD ID, and it is defined to use
+            DHCP for the configuration. Obviously, this PvD ID is
+            expected to be valid on a certain interface on a specific
+            attachment point. But due to the way the interface is
+            configured (DHCP) it can actually be activated on any
+            interface on any network that supports DHCP. Thus, it
+            might easily happen that a user by mistake activated this
+            particular NMSettingsConnection on a "wrong" network and
+            so makes a user believe the network is active while in
+            the reality it is not.
+            </t>
+
+            <t>
+            Note that even NMSettingsConnection objects that contain
+            credential information aren't guaranteed to retrieve the
+            same PvD every time the connection is made. Namely, there
+            are AAA servers and infrastructure that allow clients
+            with a same credentials to connect to multiple networks,
+            and thus to potentially receive multiple PvDs.
+            </t>
+ 
+            <t>
+            Finally, the problem is that on a single network interface
+            only one NMSettingsObject might be activated and so this
+            prevents having multiple PvDs on a single interface.
+            </t>
+
+          </list></t>
+
+          <t>
+          Those problems are not unsolvable, i.e. they could be solved
+          by modifying certain aspects of the NetworkManager in general,
+          and NMSettingsObject in particular.
+          </t>
+
+        </section>
+
+        <section title="Treating NMActiveConnection object as PvD instance and PvD">
+
+          <t>
+          Whenever a connection is made in NetworkManager an object is
+          created. Basically, there are two classes for the object, both of
+          which inherit from NMActiveConnection base class. Which class is
+          used depends on the type of the connection. Basically,  the only
+          distinction is made between VPN connections that are represented
+          by NMVPNConnection objects and other connections that are
+          represented by NMActRequest objects. The main task of
+          NMActiveConnection is to bind NMSettingsConnection with NMDevice
+          objects.
+          </t>
+
+          <t>
+          The idea in this case is to treat NMActiveConnection as a PvD or a
+          PvD instance, i.e. on each new PvD or PvD instance received new
+          NMActiveConnection is created.
+          </t>
+
+          <t>
+          But, there are still some problems:
+          </t>
+
+          <t><list>
+
+            <t>
+            Since NMActiveConnection objects are transient that means that
+            there would be no history of PvDs used. This might, or might not
+            be a problem, depending on whether we need this history or not.
+            <vspace />
+            <vspace />
+            The cases when the history would be necessary is if we cache some
+            information for the next time we connect to the given PvD. The
+            second case is if there are processes still using PvD through API
+            and thus the information about PvD must live until the process
+            dies. Note that this letter problem could be solved with delayed
+            removal of NMActiveConnections or by some asynchronous mechanism
+            informing applications that specific NMActiveConnection isn't
+            available any more.
+            </t>
+
+            <t>
+            The second problem is the question if there could exist two
+            ActiveConnection objects that were created from the same
+            NMSettingsConnection object, i.e. can NMSettingsConnections be
+            shared.
+            </t>
+
+            <t>
+            The third problem is that it will happen from within a single
+            NMActiveConnection that two or more PvDs are received and this
+            requires that NMActiveConnection is a factory for itself.
+            </t>
+
+          </list></t>
+
+        </section>
+
+        <section title="Using NMIP4Config and NMIP6Config objects for PvDs and PvD instances">
+
+          <t>
+          NetworkManager has object/classes for storing IPv4
+          (libnm-core/nm-setting-ip4-config.c) and IPv6
+          (libnm-core/nm-setting-ip6-config.c) settings. More precisely,
+          those objects are used to expose network settings of devices to
+          the rest of the NetworkManager. So, in some way they are PvDs in a
+          sense that each of them contains enough information to allow
+          connection to the network.
+          </t>
+
+          <t>
+          The problem is that internally NetworkManager keeps a single
+          IPv4/IPv6 configuration object per device and in addition it
+          merges all received configuration data on a single interface.
+          </t>
+
+          <t>
+          Specifically, in case of configuration data received in RAs
+          everything is kept in the object NMRdisc defined in
+          src/rdisc/nm-rdisc.h. There you'll find arrays of received
+          configuration data. NetworkManager assumes that a single router
+          sends all the configuration data. This assumption is not valid on
+          a multihomed network, or a network that can send multiple
+          provisioning domains within each RA. What would be necessary is to
+          change this structure so that configuration data is kept separate
+          for each router and provisioning domain.
+          </t>
+
+          <t>
+          The problems in this case are:
+          </t>
+
+          <t><list>
+
+            <t>
+            NMIPxConfig objects were not intended to keep information about
+            available IPv4 and IPv6 addresses but to make available addresses
+            configured on device. So, it reverses the purpose of those objects
+            which isn't accepted so well.
+            </t>
+
+            <t>
+            Again, those are transient objects and thus there is no history.
+            It is possible to keep every object alive, but NM isn't designed
+            to behave in such way.
+            </t>
+
+            <t>
+            It seems that in libnm there is no way to obtain a list of IPv4
+            and IPv6 objects.
+            </t>
+
+          </list></t>
+
+        </section>
+
+        <section title="PvD specific objects">
+
+          <t>
+          This is the final alternative and the most intrusive one. The idea
+          is that settings, active connections and IPv6 and IPv6
+          objects/classes stay as is, but instead, when each new connection
+          is established a new PvD data structure is created. PvD is
+          inferred from configuration settings or the NetworkManager
+          received explicit PvD.
+          </t>
+
+          <t>
+          This would solve the problem that some settings might be used to
+          obtain different PvDs which isn't known until connection is
+          established. For example, if we are using DHCP to configure the
+          interface, then, PvD received depends on the PoA.
+          </t>
+
+          <t>
+          It would also solve the problem that the user might try to
+          instantiate one PvD, while some other is actually in use. This
+          way, after the connection is established, appropriate PvD is
+          searched for, or new one is created.
+          </t>
+
+          <t>
+          This is most intrusive change that would require change in APIs
+          and thus break compatibility with the existing applications (or
+          require a completely new API).
+          </t>
+
+        </section>
 
       </section>
 
@@ -798,7 +1083,7 @@ From R2:
         connections and properties.
         </t>
 
-        <section title="Network namespace management implementation">
+        <section title="Network namespace management">
 
           <t>
           To support network namespace management it was necessary to
@@ -820,12 +1105,47 @@ From R2:
 
         </section>
 
-        <section title="Provisioning domain support implementation">
+        <section title="Experimental PvD Implementation">
 
-          <t>
-          </t>
+        <t>
+        The first implementation of PvDs was done using NMIP6Config as a
+        PvD container. Before describing the implementation we have to
+        state that the only mechanism currently able to carry PvDs is RA
+        messages. NMIP6Config objects are extended with PvD ID field. At
+        first, there was support for different types of PvD IDs and the
+        first implemented type was UUID stored in ASCII format. Later in
+        the development process PvD ID types were removed and the only
+        possible type is UUID. It seems that this doesn't make
+        implementations less flexible and in the same time substantially
+        reduces complexity.
+        </t>
+
+        <t>
+        When RA is received, and after it is processed as usual, a new
+        implicit PvD is created from data in RA. If there are two or more
+        routers on the local network, each sending its own configuration
+        data, then a separate PvD is created for each RA. Also, in case
+        there are PVD container option in RA it is parsed and additional
+        PvD is created from that data.
+        </t>
+
+        <t>
+        This information is then handled to NMDevice object which merges
+        data from implicit PvDs (as it does in the unmodified version) but
+        now there is also a hash table with set of PvDs received on the
+        given interface. This information is then exposed through
+        NMActiveConnection object.
+        </t>
 
         </section>
+
+      </section>
+
+      <section title="Relationship to PvD Architecture">
+
+      </section>
+
+      <section title="Experience gained and future work">
 
       </section>
 
