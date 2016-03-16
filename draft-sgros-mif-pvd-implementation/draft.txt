@@ -88,22 +88,22 @@ Table of Contents
      4.5.  Relationship to PvD Architecture  . . . . . . . . . . . .  18
      4.6.  Experience gained and future work . . . . . . . . . . . .  18
    5.  Server component  . . . . . . . . . . . . . . . . . . . . . .  18
-   6.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .  19
-   7.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  19
-   8.  Security Considerations . . . . . . . . . . . . . . . . . . .  19
-   9.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  19
-     9.1.  Normative References  . . . . . . . . . . . . . . . . . .  19
-     9.2.  Informative References  . . . . . . . . . . . . . . . . .  19
-     9.3.  Implementation repositories . . . . . . . . . . . . . . .  20
-     9.4.  URIs  . . . . . . . . . . . . . . . . . . . . . . . . . .  20
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  20
+     5.1.  Router Advertisements (RA) message extension  . . . . . .  19
+     5.2.  Configuration file (radvd.conf) extension . . . . . . . .  21
+     5.3.  Example Usage . . . . . . . . . . . . . . . . . . . . . .  22
+   6.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .  26
+   7.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  26
+   8.  Security Considerations . . . . . . . . . . . . . . . . . . .  27
+   9.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  27
+     9.1.  Normative References  . . . . . . . . . . . . . . . . . .  27
+     9.2.  Informative References  . . . . . . . . . . . . . . . . .  27
+     9.3.  Implementation repositories . . . . . . . . . . . . . . .  28
+     9.4.  URIs  . . . . . . . . . . . . . . . . . . . . . . . . . .  28
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  28
 
 1.  Introduction
 
    TBD.
-
-
-
 
 
 
@@ -999,9 +999,9 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 5.  Server component
 
-   Write about changes in the radvd component.
-
-
+   Server side component of the MIF architecture implementation
+   described in this document is Router Advertisements Daemon (radvd).
+   radvd is used to announce PvD-related network configuration data to
 
 
 
@@ -1009,6 +1009,430 @@ Gros, et al.            Expires September 6, 2016              [Page 18]
 
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
+
+   the clients using NDP protocol.  PvD-aware radvd extension alows
+   clients to autoconfigure their network parameters related to multiple
+   PvDs simultaneously.  For the purpose of MIF architecture
+   implementation, existing structure of Router Advertisements (RA)
+   message is extended with new NDP option that encapsulates PvD-related
+   network configuration information as suboptions.  To configure what
+   PvD-related network configuration information to include into RA
+   messages, radvd configuration file is extended with new configuration
+   block where PvD-related network configuration information are
+   specified.
+
+   Proposed extension of the Router Advertisement Daemon is backward
+   compatible with the non-PvD-aware version of radvd.  This means that
+   old clients will continue to work normally, except that they will not
+   be able to configure PvD-related network information on their network
+   interfaces.  New option introduced into the RA message is silently
+   ignored by non-PvD-aware clients if they are implemented correctly.
+
+5.1.  Router Advertisements (RA) message extension
+
+   PvD-aware version of radvd supports the inclusion of network
+   parameters that belong to explicitly identified provisioning domains
+   into the Router Advertisements (RA) messages.  Explicitly identified
+   provisioning domain is a set of consistent network configuration
+   parameters identified by unique provisioning domain identifier (PvD
+   ID).
+
+   To carry PvD-related network configuration information, the structure
+   of the RA message is extended with new NDP option called Provisioning
+   Domains Container option (PVD_CO), as described in
+   [I-D.ietf-mif-mpvd-ndp-support].  PVD_CO is a container option, which
+   means it encapsulates other NDP options.  NDP options nested within
+   the PVD_CO option describe particular PvD-related network
+   configuration information.  All information the belong to a single
+   PvD which are part of a single network autoconfiguration procedure
+   are nested within the same PVD_CO option.  If a single RA message
+   contains network configuration information from multiple sources,
+   multiple PVD_CO options are present in such message.  Therefore, RA
+   message MAY contain zero or more PVD_CO options, one per PvD
+   announced in RA message.  Figure 4 shows the structure of the PVD_CO
+   option used in proposed MIF architecture implementation.
+
+
+
+
+
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 19]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |    Type=63    |    Length     |0|  Reserved=0 |  Name Type=0  |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |            Padding to ensure 8 octets alignment=0             |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               |
+   ~                  Encapsulated NDP options                     ~
+   |                                                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+                          Figure 4: PVD_CO option
+
+   In this experimental implementation, the type of the option is set to
+   63.  Option length is calculated depending on the length of the
+   encapsulated options.  The values of the S flag and Name Type field
+   are set to 0, which indicates that current implementation does not
+   use any security mechanism.  PVD_CO option header ends up with four
+   octets long padding filled with zeros.  The rest of the option
+   contains encapsulated NDP options that describe particular PvD-
+   related network parameters.
+
+   The following NDP options are allowed to appear within the PVD_CO
+   option:
+
+   o  Provisioning Domain Identifier option (PVD_ID)
+
+   o  Prefix Information option
+
+   o  Route Information option
+
+   o  RDNSS option
+
+   o  DNSSL option
+
+   PVD_ID is a new option introduced to uniquely identify the PvD, while
+   others are standard NDP options used in regular non-PvD-aware RA
+   messages.
+
+   PVD_ID is mandatory option and MUST be present exactly once per
+   PVD_CO option.  If RA message contains multiple PVD_CO options, PvD
+   identifiers included in PVD_ID options MUST be unique.  General
+   structure of the PVD_ID option is proposed in [I-D.ietf-mif-mpvd-id].
+   For the pupose of this MIF architecture implementation, a slightly
+   simplified structure is used, as shown in Figure 5.
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 20]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |    Type=64    |   Length=5    |   id-type=4   | id-length=36  |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                                                               |
+   ~                    PVD identity information                   ~
+   ~                       (UUID, 36 octets)                       ~
+   |                                                               |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+                          Figure 5: PVD_ID option
+
+   In this experimental implementation, the type of the option is set to
+   64.  [I-D.ietf-mif-mpvd-id] proposes several diferent data formats
+   for PvD identifiers, including UUID, UTF-8 string, OID, NAI Realm,
+   FQDN, and ULA Prefix.  Here, UUID is chosen as the only supported
+   format for PvD identifier.  Since the length of the UUID is fixed to
+   36 octets, all fields in PVD_ID option are of fixed length.  The
+   option itself is always 40 octets long, therefore the Length field is
+   set to 5, which is a multiplier of 8 octets. id-type field is always
+   set to 4, determining UUID as the only supported PvD identifier data
+   format.  Consequently, id-length field is always set to 36,
+   determining the length of UUID.
+
+   Other options nested within the PVD_CO option follow a standardized
+   structure defined in corresponding NDP documents.  Each of the nested
+   options MAY appear zero or more times per PVD_CO option.
+
+5.2.  Configuration file (radvd.conf) extension
+
+   The behavior of the Router Advertisement Daemon is configured using
+   textual configuration file, usually called radvd.conf.  Configuration
+   file enables system administrators to specify a wide range of
+   configuration parameters that can roughly be divided into two
+   categories: 1) interface-level configuration directives that define
+   whether or not radvd will announce RA messages on a given interface,
+   timing for sending RA messages, client filters, etc., and 2) option-
+   specific configuration directives that define the content of
+   particular NDP options.  For the purpose of the MIF architecture
+   implementation, radvd configuration file is extended with new
+   configuration directive which enables definition of the content of
+   the PVD_CO option.
+
+   Figure 6 shows a general structure of the radvd configuration file
+   extended with new configuration section for specifying PvD-related
+   network configuration information.
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 21]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+     interface name {
+         list of interface specific options
+         list of prefix definitions
+         list of route definitions
+         list of RDNSS definitions
+         list of DNSSL definitions
+         list of LoWPANCo definitions
+         list of ABRO definitions
+       +----------------------------------------+
+       | list of PvD definitions                |
+       +----------------------------------------+
+     };
+
+    Figure 6: The structure of the radvd.conf extended with PvD-related
+                           configuration section
+
+   Newly introduced configuration section enables definition of network
+   configuration parameters for multiple provisioning domains.  One PvD
+   definition per provisioning domain MUST be specified in radvd.conf.
+   For each PvD definition, radvd generates a separate PVD_CO option in
+   RA message.
+
+   Figure 7 shows the structure of the radvd.conf's configuration
+   directive for PvD definition.  PvD configuration block starts with
+   "pvd" keyword followed by UUID that represents the PvD identifier.
+   The body of the pvd block contains zero or more definitions for
+   prefix, route, RDNSS, and DNSSL.  Definitions used inside the pvd
+   block follow the same syntax as when they appear in the upper level
+   interface block.
+
+     pvd UUID {
+         list of prefix definitions
+         list of route definitions
+         list of RDNSS definitions
+         list of DNSSL definitions
+     };
+
+    Figure 7: The structure of the PVD configuration section to use in
+                                radvd.conf
+
+5.3.  Example Usage
+
+   The following example shows a radvd configuration file that combines
+   two types of network configuration information: 1) those that are
+   announced to clients in traditional way, without specifying PvD
+   identity (implicit PvDs), and 2) those belonging to explicitly
+   identified PvDs (explicit PvDs).  In the example given, radvd
+   announces three sets of network configuration information, one
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 22]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+   belonging to implicit, and two belonging to explicit PvD.  As
+   implicit PvD, it announces only the prefix information
+   (2001:db8:1111:2222::/64).  For the first explicit PvD, radvd
+   announces prefix information (2001:db8:aaaa:bbbb::/64) and the
+   address of the DNS server (2001:db8:aaaa:bbbb::1).  For the second
+   explicit PvD, only the prefix information (2001:db8:cccc:dddd::/64)
+   is announced to the clients.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 23]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+     interface eth0
+     {
+         AdvSendAdvert on;
+         IgnoreIfMissing on;
+         MinRtrAdvInterval 10;
+         MaxRtrAdvInterval 20;
+
+         prefix 2001:db8:1111:2222::/64
+         {
+             AdvOnLink on;
+             AdvAutonomous on;
+             AdvRouterAddr off;
+         };
+
+         pvd f5a7f97d-ba83-4fd8-a3e0-839b2c2446ca
+         {
+             prefix 2001:db8:aaaa:bbbb::/64
+             {
+                 AdvOnLink on;
+                 AdvAutonomous on;
+                 AdvRouterAddr off;
+             };
+
+             RDNSS 2001:db8:aaaa:bbbb::1
+             {
+                 AdvRDNSSLifetime 30;
+             };
+         };
+
+         pvd f5a7f97d-ba83-4fd8-a3e0-839b2c2446cb
+         {
+             prefix 2001:db8:cccc:dddd::/64
+             {
+                 AdvOnLink on;
+                 AdvAutonomous on;
+                 AdvRouterAddr off;
+             };
+         };
+     };
+
+        Figure 8: Example of radvd.conf with combined configuration
+                 parameters for implicit and explicit PvDs
+
+   Based on this configuration file, radvd generates the RA message
+   shown in Figure 9.
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 24]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      134      |       0       |          Checksum             |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Cur Hop Limit |0|1|  Reserved |       Router Lifetime         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                         Reachable Time                        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                          Retrans Timer                        |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ <-+
+   |       3       |       4       |       64      |1|1| Reserved1 |   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   I
+   |                         Valid Lifetime                        |   m
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   p
+   |                       Preferred Lifetime                      |   l
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                           Reserved2                           |   P
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   v
+   ~                      2001:db8:1111:2222::                     ~   D
+   ~                          (16 octets)                          ~   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ <-+
+   |  63 (PVD_CO)  |      13       |0|      0      |       0       |   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   |
+   |            0 (padding to ensure 8 octets alignment)           |   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   |
+   |  64 (PVD_ID)  |       5       |        4      |      36       |   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   |
+   |                                                               |   |
+   ~             f5a7f97d-ba83-4fd8-a3e0-839b2c2446ca              ~   E
+   ~                         (36 octets)                           ~   x
+   |                                                               |   p
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   l
+   |       3       |       4       |       64      |1|1| Reserved1 |   i
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   c
+   |                         Valid Lifetime                        |   i
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   t
+   |                       Preferred Lifetime                      |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   P
+   |                           Reserved2                           |   v
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   D
+   ~                      2001:db8:aaaa:bbbb::                     ~   1
+   ~                          (16 octets)                          ~   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   |
+   |      25       |       3       |           Reserved            |   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   |
+   |                              30                               |   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   |
+   ~                      2001:db8:aaaa:bbbb::1                    ~   |
+   ~                          (16 octets)                          ~   |
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 25]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ <-+
+   |  63 (PVD_CO)  |      10       |0|      0      |       0       |   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   |
+   |            0 (padding to ensure 8 octets alignment)           |   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   |
+   |  64 (PVD_ID)  |       5       |        4      |      36       |   E
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   x
+   |                                                               |   p
+   ~             f5a7f97d-ba83-4fd8-a3e0-839b2c2446cb              ~   l
+   ~                         (36 octets)                           ~   i
+   |                                                               |   c
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   i
+   |       3       |       4       |       64      |1|1| Reserved1 |   t
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                         Valid Lifetime                        |   P
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   v
+   |                       Preferred Lifetime                      |   D
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   2
+   |                           Reserved2                           |   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   |
+   ~                      2001:db8:cccc:dddd::                     ~   |
+   ~                          (16 octets)                          ~   |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ <-+
+
+        Figure 9: Example of RA message with combined configuration
+                 parameters for implicit and explicit PvDs
+
+   Based on this RA message, PvD-aware clients can configure three
+   different set of network parameters on their network interfaces.
+   Non-PvD-aware clients will use prefix information from implicit PvD
+   only, skipping the content of two PVD_CO options.
 
 6.  Acknowledgements
 
@@ -1024,6 +1448,15 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    section contains an explicit statement that this is the case (as
    above).  If there are no requirements for IANA, the section will be
    removed during conversion into an RFC by the RFC Editor.
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 26]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
 
 8.  Security Considerations
 
@@ -1059,18 +1492,27 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
               multiple provisioning domains in DHCPv6", draft-ietf-mif-
               mpvd-dhcp-support-02 (work in progress), October 2015.
 
-
-
-Gros, et al.            Expires September 6, 2016              [Page 19]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
+   [I-D.ietf-mif-mpvd-id]
+              Krishnan, S., Korhonen, J., Bhandari, S., and S.
+              Gundavelli, "Identification of provisioning domains",
+              draft-ietf-mif-mpvd-id-02 (work in progress), October
+              2015.
 
    [I-D.ietf-mif-mpvd-ndp-support]
               Korhonen, J., Krishnan, S., and S. Gundavelli, "Support
               for multiple provisioning domains in IPv6 Neighbor
               Discovery Protocol", draft-ietf-mif-mpvd-ndp-support-03
               (work in progress), February 2016.
+
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 27]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
 
    [I-D.narten-iana-considerations-rfc2434bis]
               Narten, T. and H. Alvestrand, "Guidelines for Writing an
@@ -1111,17 +1553,6 @@ Authors' Addresses
    Email: stjepan.gros@fer.hr
 
 
-
-
-
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 20]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
-
    Leonardo Jelenkovic
    University of Zagreb
    Unska 3
@@ -1129,6 +1560,14 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    HR
 
    Email: leonardo.jelenkovic@fer.hr
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 28]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
    Dejan Skvorc
@@ -1173,4 +1612,13 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
 
-Gros, et al.            Expires September 6, 2016              [Page 21]
+
+
+
+
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 29]
