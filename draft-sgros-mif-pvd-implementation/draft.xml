@@ -689,12 +689,12 @@ From R2:
           in RAs will be merged together per device.
           </t>
 
-          <t hangText="Multiple concurrent DNS servers on a local network.">
+          <t hangText="Multiple concurrent DHCP servers on a local network.">
           <vspace />
           This is a final use case that isn't possible by the current
           protocol design. Namely, DHCP offers received are treated as
-          alternative and there is no way to have multiple DNS servers
-          on a single local network.
+          alternative and there is no way to have multiple concurrent
+          DHCP servers on a single local network.
           </t>
 
         </list></t>
@@ -704,20 +704,25 @@ From R2:
       <section title="The architecture and components">
 
         <t>
-        We can describe NetworkManager in terms of static and runtime
-        architecture. The static architecture is reflected by the source
-        code organization. For the purpose of this draft will only
-        present NetworkManager itself, but take into account that there
-        are additional components, too. So, the NetworkManager's code is
-        in src/ directory of top-level NetworkManager directory. There
-        you'll find the following subdirectories:
+        We can describe NetworkManager in terms of static architecture
+        and runtime behavior. The static architecture is reflected by the
+        source code organization. The purpose of this draft is only
+        to present NetworkManager itself, but take into account that there
+        are additional components, too which we'll not cover.
+        </t>
+
+        <t>
+        So, the NetworkManager's code is in src/ subdirectory of top-level
+        directory. There you'll find the following subdirectories and
+        files. Note that we don't cover everything in there but only
+        important parts for the implementation of provisioning domains.
         </t>
 
         <t><list style="hanging" hangIndent="6">
 
           <t hangText="devices/">
           <vspace />
-          Objects that control devices.
+          Objects that allow management of networking devices.
           </t>
 
 <!--
@@ -740,7 +745,7 @@ From R2:
           <vspace />
           Platform specific code that isolates NetworkManager from specifics of
           a certain operating system. The only supported platform at the time
-          this was written in Linux.
+          this draft was written was for Linux.
           </t>
 
 <!--
@@ -758,6 +763,9 @@ From R2:
 
           <t hangText="settings/">
           <vspace />
+          In this subdirectory are objects that represent connections
+          (NMSettingsConnection) and a singleton object that manages all
+          connection objects.
           </t>
 
 <!--
@@ -772,9 +780,22 @@ From R2:
 
           <t hangText="vpn-manager/">
           <vspace />
+          Object to manage VPN connections.
+          </t>
+
+          <t hangText="nm-manager">
+          <vspace />
+          This is the main object, NMManager, that controls everything.
           </t>
 
         </list></t>
+
+      </section>
+
+      <section title="Support for network namespaces in NetworkManager">
+
+      <t>
+      </t>
 
       </section>
 
@@ -1087,22 +1108,104 @@ From R2:
         <section title="Network namespace management">
 
           <t>
-          To support network namespace management it was necessary to
-          add two objects: NMNetworkNamespaceController which is a
-          singleton object that is used to enumerate available
-          network namespaces, create a new one or remove existing
-          network namespace.
+This section documents a process to implement support for network namespaces in the NetworkManager. The best example is a VPN connection isolation and it was implemented as an example of the isolation use. When network namespaces are used then certain applications can be started in namespace in which only network connectivity is via VPN. Those applications can access VPN resources while all the other applications, that are in different network namespaces, will not see VPN connection and thus couldn't use them.
           </t>
 
           <t>
-          The second object introduced to allow NetworkManager support
-          network namespaces is NMNetns. For each network namespace
-          created by NetworkManager one NMNetns object is created. This
-          object has an interface exposed over D-Bus that allows one to
-          query all available devices within the network namespace, to
-          take device from some other network namespace and to activate
-          connections.
+Note that at the time this draft written, Thomas Haller one of the developers of NetworkManager implemented basic support for namespaces in NetworkManager that was a bit different in some implementation details from mine but intends to use certain functionality.
           </t>
+
+          <section title="The idea">
+
+            <t>
+The intention of implementing support for network namespaces was to allow applications to be isolated so that they use specific network connections. Network namespaces in Linux kernel have some properties that anyone that wants to use them must be aware of.
+            </t>
+
+            <t>
+So, an application can not be moved between different network namespace by some other application, i.e. only application itself can change network namespaces, and only if it has appropriate permissions.
+            </t>
+
+            <t>
+So, the idea is the following one. Application is started in some network namespace. This can be done easily (e.g. see 'ip netns exec' command). Then, this network namespace is manipulated by either the application itself - it is aware of NM's support for network namespaces, or by third party application (that application could be nmcli). The manipulation means that requests are sent to NetworkManager via D-Bus to make changes to network namespace. The changes can be activation and deactivation of certain connections. NetworkManager, based on those requests and on specifics of connections and devices those connections are bound to, determines what to do. For example, it can create virtual device in the network namespace, or can move physical device. Basically, this part isn't important to the application itself, the only thing that is important is that the application is assigned requested connections.
+            </t>
+
+          </section>
+
+          <section title="Implementation">
+
+            <t>
+The following changes were made to NetworkManager in order to introduce support for network namespaces:
+            </t>
+
+            <t>
+Created new object NMNetnsController whose purpose is to allow management of all network namespaces controlled by NetworkManager. Via the interface org.freedesktop.NetworkManager.NetworkNamespacesController it is possible to create a new network namespace, or to remove the existing one. It is also possible to obtain a list of existing network namespaces.
+            </t>
+ 
+            <t>
+Created new object NMNetns that represents a single network namespace. So, when new network namespace is created a new object NMNetns is created and exposed on D-Bus. This object allows manipulation with network namespace via the interface org.freedesktop.NetworkManager.NetNsInstance. So, it is possible to get a list of all devices within the network namespace, take certain device from some other network namespace and to activate some connection.
+            </t>
+ 
+            <t>
+NMSettings is now singleton object. This wasn't so significant change because there was also one object of this type before, but now it is more explicitly exposed as such.
+            </t>
+ 
+            <t>
+NMPlatform, NMDefaultRouteManager and NMRouteManager aren't singleton objects any more. They are now instantiated for each new network namespace that is created.
+            </t>
+
+            <section title="VPN isolation">
+
+              <t>
+VPN isolation was done as a first user of network namespaces implementation. It was easier then other connections because the assumption was that VPN connection should live only in single network namespace and it should be the only available connection.
+              </t>
+
+              <t>
+At the beginning, there was doubt on where to place the knowledge of network namespace and two places were candidates, in NMActiveConnection and NMVPNConnection classes. NMActiveConnection is actually a base class of NMVPNConnection class. The modification of NMVPNConnection approach is better for the following reason because the idea was to introduce new configuration parameter in the configuration file of a VPN connection that will specify that isolation is necessary and also some additional behaviors:
+              </t>
+
+              <t><list style="hanging" hangIndent="6">
+
+                <t hangText="netns-isolate">
+                <vspace />
+Boolean parameter (yes/no) which defines weather VPN connection should be isolated within a network namespace or not. For backwards compatibility reasons 
+                </t>
+ 
+                <t hangText="netns-persistent">
+                <vspace />
+Should network namespace be persistant (yes) or not (no). Persistant namespace will be retained when VPN connection is terminated, while non-persistant will be removed.
+                </t>
+
+                <t hangText="netns-name">
+                <vspace />
+Network namespace name. Special value is uuid which means connection's UUID should be used, also name is special value that requests connection's name to be used. Finally, any other string is taken as-is and used as a network namespace name.
+                </t>
+ 
+                <t hangText="netns-timeout">
+                <vspace />
+How much time to wait (in milliseconds) for device to appear in target namespace.
+                </t>
+
+              </list></t>
+
+              <t>
+Basically, the implementation is such that when device appears in root network namespace it is taken from there (using TakeDevice method, but called directly instead via D-Bus).  When device appears in the target network namespace network parameters are assigned to the interface. This was tested with OpenVPN type of VPN.
+              </t>
+
+              <t>
+The implementation has two problems. First, the case of VPN connections that don't create virtual devices but instead just modify packet processing rules in the Linux kernel (i.e. XFRM). Secondly, hostname and name resolution parameters aren't assigned because the infrastructure is lacking in that respect.
+              </t>
+
+            </section>
+
+          </section>
+
+          <section title="Conclusion">
+
+            <t>
+The initial goal of having network namespaces support in NetworkManager was achieved. There are functionalities missing like isolation of any connection, hostname handling and DNS resolution handling. Those are things that will have to be resolved in the future.
+            </t>
+
+          </section>
 
         </section>
 
@@ -1535,3 +1638,84 @@ From R2:
 
   </back>
 </rfc>
+
+<!--
+
+
+Isolation of any connection
+
+The next step is to allow isolation of any connection. But this is a bit more involved because certain connections can live in two or more network namespaces simultaneously. This creates the following problems:
+A single device, on which connection was received/activated, can be in only one network namespace. So, to be able to have network connection in multiple network namespace in the same time device should be cloned. But, connection that isn't yet used is activated, than it is not necessary to clone device, device can be moved to requested network namespace.
+
+
+
+
+What about receiving RAs in different network namespaces? By default, each network namespace will receive RA and thus configure specific IPv6 address. But what if that should be prevented?
+
+
+
+alternative is to use NMActiveConnection... but in that case there is no DBus method that will allow user to activate certain connection in specific namespace...
+
+
+
+
+
+
+thaller: what I want is to allow application to select specific configuration set (provisioning domain) and ask network manager to activate it in its network namespace...
+
+
+`nmcli device wifi connect` creates a half-filled NMConnection and calls AddAndActivate(). Then NM completes he connection, adds it as NMSettingsConnection, and activates it.
+
+
+
+so, obviously, this configuration set has to be stored somewhere and accessible to application to inspect it
+
+
+
+
+09:42:51
+
+thaller
+
+
+
+sgros, the provisioning domain is something received via RA, right?
+
+
+
+
+09:44:31
+
+sgros
+
+
+
+yes
+
+
+
+
+
+
+thaller, but there is one subtle thing maybe I should also describe... namely, we have "provisioning domain" and "provisioning domain instance"... the difference is that instance contains a specific IP address, while the letter doesn't... so, RA sends provisioning domains, while DHCPv4/DHCPv6 sends pvd instances...
+
+
+
+
+
+
+tahller, in any case, they should be available to applications to inspect them and to request specific ones to be made available to them
+
+
+
+
+09:46:00
+
+thaller
+
+
+
+sgros, maybe, this should more work like wifi... there you have a scan-list of wifis that are in range. For some of them ("my-wifi"), you might have a NMSettingsConnection (previously configured). That one you can activate right away via `nmcli connection up my-wifi`. For others, the UI helps you to create and activate a connection in one step: `nmcli device wifi connect` ... I think this should be similar
+
+
+-->
