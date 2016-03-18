@@ -123,9 +123,9 @@
     <abstract>
       <t>
       The purpose of this draft is to document two implementations that tried
-      to implement PvD architecture document. One implementation was done from
-      scratch (PvD-manager) while another is a part of an existing component
-      (NetworkManager).
+      to implement Provisioning Domains (PvD) architecture document. One
+      implementation was done from scratch (PvD-manager), while another is part
+      of an existing component (NetworkManager).
       </t>
     </abstract>
   </front>
@@ -147,16 +147,16 @@
 
     </section>
 
-    <section title="Common implementation mechanism">
+    <section title="Common implementation mechanisms">
 
       <t>
-      In this section we describe some common implementation concepts.
+      In this section, we describe some common implementation concepts.
       Basically, they follow from the preparation phase when different
       approaches were analysed. 
       </t>
 
       <t>
-      First of, the implementations are all done on modern Linux operating
+      First, the implementations are all done on modern Linux operating
       system, more specifically, Fedora Desktop distribution. The main
       characteristic of this distribution is that the main IPC mechanism
       is D-Bus. So, D-Bus is also used by the two implementations described
@@ -164,9 +164,9 @@
       </t>
 
       <t>
-      Next, in the analysis phase the implementations assessment was
+      Next, in the analysis phase, the implementations assessment was
       done to determine which mechanisms to use with the main goal of
-      having control over the use of provisioning domains by applications.
+      having control over the use of provisioning domains (PvDs) by applications.
       In other words, the main issue was how to control which PvD will
       an application use in the presence of multiple provisioning domains.
       The problems we tried to address are well described in <xref
@@ -177,10 +177,11 @@
 
       <t>
       Still, while network namespaces were found to be the most appropriate
-      machanism for separation there is a big issue in that it is not possible
+      mechanism for separation of PvD-related network configurations, there is
+      a big issue in that it is not possible
       to have the same PvD instance in separate network namespaces. To get
-      around that issue multiple PvD instaces could be used by a single node.
-      Yet, this is not without the problems either. First, from the operational
+      around that issue, multiple PvD instaces could be used by a single node.
+      However, this is not without the problems either. First, from the operational
       perspective this leads to proliferation of IP addresses and to issues
       with accountability. It is even a bigger issue on IPv4 networks that have
       restricted number of PvD instances per each PvD.
@@ -196,7 +197,7 @@
 	PvD-manager is orthogonal to existing system, which means it does not interfere
 	with regular network behavior: none of the services and settings used by Network
 	Manager and similar components are not changed nor affected.
-	Implementation and documentation for PvD-manager is available at its
+	Source code and instructions of how to run the PvD-manager are available at its
 	<xref target="PvD-manager">git repository</xref>.
 
 </t>
@@ -216,7 +217,7 @@
 </t>
 <t>
 	<xref target="PvD-manager-architecture" /> presents an overview of a system
-	and its components which uses PvD-manager.
+	and its components that use PvD-manager.
 </t>
 <figure anchor="PvD-manager-architecture" title="PvD prototype architecture overview">
 <artwork><![CDATA[
@@ -243,7 +244,9 @@
 <t>
 	PvD-manager receives network configurations through Router Advertisement (RA)
 	messages. Modified version of PvD aware
-	<xref target="radvd">radvd daemon</xref> is used. Each RA may contain one or
+	<xref target="radvd">radvd daemon</xref> is used. The modifications made to
+	radvd to support MIF architecture is described	in <xref target="section-radvd"/>.
+	Each RA may contain one or
 	more network configurations which are classified either as explicit or implicit
 	PvDs. Explicit PvD is a set of coherent NDP options explicitly labeled with a
 	unique PvD identifier and nested within a special NDP option called PVD
@@ -303,12 +306,12 @@
 <t>
 	As per <xref target="RFC7556">RFC 7556</xref>, implemented PvD system
 	provides basic, intermediate and advanced PvD support (in APIs) for
-	client applications. Only difference is that our basic support doesn't
+	client applications. The only difference is that our basic support doesn't
 	provide automatic selection for PvD unaware application - it must be started
 	with PvD launcher with manual selection of PvD. Intermediate and advanced
 	PvD support require some additional properties (metadata) provided with PvD.
-	Next section describe used mechanism to provide such information to PvD-manager
-	which then provide such information to client applications.
+	Next section describe a mechanism used to provide such information to PvD-manager
+	which they provide such information to client applications.
 </t>
 
 </section>
@@ -408,25 +411,28 @@ From R2:
 <!--</section>
 <section title="PvD-manager, Client Applications">-->
 <t>
-	PvD-manager is a daemon for client host. Currently PvD-manager consists of
+	PvD-manager is a daemon for client host. Currently, PvD-manager consists of
 	several modules. Main module maintain PvD information, creates, updates and
-	deletes namespaces. NDP module listens for RA messages, parse them and forward
-	them to main module. API server module listens for client application
-	requests (using d-bus) and responds to them, and also send signals to clients
+	deletes namespaces. NDP module listens for RA messages, parses them, and forwards
+	them to the main module. API server module listens for client application
+	requests (using d-bus) and responds to them. It also send signals to clients
 	when a change occurred in PvDs.
 </t>
 <t>
 	Before starting a network connection, PvD aware client application should first
-	request PvDs from PvD-manager. Next, one PvD should be selected (activated)
-	and only then network connection(s) created.
+	request PvDs from PvD-manager. Next, one PvD should be selected (activated).
+	In order to bind a new network connection to a given PvD, network connection must be created  
+	after the PvD activation has been made, but before activation on another PvD.
 	If other PvDs are required (later or in parallel), same procedure must be
-	followed: select PvD first and then create connections.
-	Connection will continue to operate within PvD in which was created,
+	followed: select PvD first and then create connections before activating
+	another PvD. In other words, all network connections created between two PvD
+	activations will be bound to the PvD which was selected first.
+	Connection will continue to operate within PvD in which it was created,
 	regardless of PvDs selected later.
 </t>
 <t>
 	PvD unaware application should be started with PvD launcher to use certain
-	PvD. Otherwise, such application will behave as PvDs weren't present
+	PvD. Otherwise, such application will behave as if PvDs were not present
 	("as usual").
 </t>
 <!--</section>-->
@@ -436,34 +442,38 @@ From R2:
 
 <t>
 	Proposed PvD architecture is based on Linux namespaces as PvD isolation
-	mechanism. Isolation namespaces provide resolve many issues about
+	mechanism. Isolation namespaces resolve many issues about
 	overlapping and conflicting network parameters for different PvDs.
-	However, they also impose some requirements that may limit usage in certain
-	environment, especially ones based on public IPv4 addresses.
+	However, they also impose some requirements that may limit the usage of the proposed 
+	implementation in certain environment, especially ones based on public IPv4 addresses.
 	One of the main problem with namespaces is that each namespace requires
 	an IP address (since namespace emulates network from link-layer and up).
 </t>
 <t>
-	Only IPv6 is used in implementation. Main reasons include using RA messages
-	as PvD information provider and unrestricted generation of IPv6 address per
+	Only IPv6 is used in this implementation. Main reasons include using RA messages
+	as PvD information provider and unrestricted generation of IPv6 addresses per
 	PvD.
 </t>
 
 <t>
-	A library is created with interfaces (API) for PvD operations, currently only for
-	programs in C programming language.
+  To expose PvD-related operations to the applications, a library with the API
+  is created, currently only for programs written in C programming language.
 	For communication between client application (using provided API) and
-	PvD-manager d-bus service is used.
-	Implemented interface include PvD retrieval methods
-	(pvd_get_by_id, pvd_get_by_properties), PvD selection (pvd_activate) and
-	registration for events when PvDs change (pvd_register_signal).
+	PvD-manager, d-bus service is used.
+	The API proposed in this implementation includes PvD retrieval methods
+	(pvd_get_by_id, pvd_get_by_properties), PvD selection method (pvd_activate), and
+	registration for events when PvDs change their state (pvd_register_signal).
 	Sample test applications which
-	demonstrate API usage and PvD system possibilities are provided in repository.
+	demonstrate API usage and PvD system possibilities are provided in
+	<xref target="PvD-manager">the PvD-manager repository</xref>.
 </t>
 
 <t>
 	PvD-manager is implemented in Python 3 because it allows rapid prototyping
-	using network managing modules (mainly pyroute2 and netaddr).
+	using network managing modules. Two modules from Python package repository
+	were helpful during the implementation: pyroute2 as a Python-based interface
+	to the NETLINK service, and netaddr for manipulation with network-related
+	data structures (IP addresses, masks, prefixes, etc.).
 </t>
 
 
@@ -518,18 +528,18 @@ From R2:
 <t>
 	VPN was simulated by a tunnel between Client and S2, created within
 	implicit PvD provided by R2. Then tunnel was added as another PvD.
-	S2 for this scenario had local address (and prefix) as local addresses
+	In this scenario, S2 had local address (and prefix) as local addresses
 	on R2 network: there were two PvDs with same prefix on Client.
 	However, client applications running in those two different PvDs for the
-	same IP address (fd02::1) connected with different servers: one with
+	same IP address (fd02::1) get connected with different servers: one with
 	R2, and another (which used "VPN" PvD) with S2.
 </t>
 <t>
 	In some scenarios both S1 and S2 were connected to both routers R1 and R2.
 	In this scenarios better PvD could be chosen for connecting with servers,
-	if properties for PvDs are provided. Also, when some connection fails - when
-	some PvD loses connectivity, application can reset connections, refresh
-	PvD availability from PvD-manager and chose again among active PvDs.
+	if properties for PvDs are provided. Also, when a connection fails (when
+	some PvD loses connectivity), the application can reset connections, refresh
+	PvD availability from PvD-manager, and select another PvD among the active ones.
 </t>
 <t>
 	More details for described scenarios (and some other)
@@ -539,12 +549,6 @@ From R2:
 </section>
 
 <section title="Experiences gained">
-<t>
-	Present some experience gained from the implementation. What
-	do you think was good? What would you do differently if you
-	were to implement this again. What about language/environment,
-	was it good, what was bad?
-</t>
 <section title="Linux namespaces">
 <t>
 	Using Linux namespaces still seems best option for PvD realization despite
@@ -557,46 +561,48 @@ From R2:
 	Managing namespaces (creation, deletion, modification) requires root
 	privileges (as expected). However, even switching an application from one
 	namespace to another is possible only if application has root privileges.
-	This currently limits this namespace approach to only applications run by
+	This currently limits this namespace approach exclusively to applications run by
 	root. For lifting this limitation, changes in Linux kernel and namespace
 	handling is required. Some sort of permission system should also be applied to
-	namespaces (e.g. similarly with permissions on files and system objects).
+	namespaces (e.g. similar to permissions on files and system objects).
 </t>
 <t>
-	Switching namespace from within the application with setns doesn't update DNS
+	Switching namespace from within the application with setns() system call doesn't update DNS
 	related configuration as expected. When an application is started with commands
 	"ip netns exec &lt;namespace-name&gt; &lt;application&gt; [arguments]",
 	DNS configuration is updated (/etc/resolf.conf is the one from
-	/etc/netns/&lt;namespace-name&gt;/). However, setns doesn't replicate that
+	/etc/netns/&lt;namespace-name&gt;/). However, setns() doesn't replicate that
 	behavior, and that manipulations should be done separately (mounting certain
 	directories/files).
 </t>
 <t>
 	When a namespace is created, a virtual device is created that is linked
 	with physical device (and it gets assigned its own MAC address). However, if
-	on particular physical device can't be linked virtual one (like VPN), then
+	particular physical device does not allow to be linked with virtual one (like VPN), then
 	either physical device must be moved to certain PvD or some sort of bridge
-	created and devices attached to that bridge that can be moved to namespace.
+	has to be created and devices attached to that bridge that can be moved to the namespace.
 	Sometimes, it's better to move physical device to particular namespace (PvD)
-	and allow only some applications its usage (e.g. like VPN).
+	and allow only some applications to use it (e.g. like VPN).
 </t>
 <t>
-	Managing namespace: creating, deleting, adding device to it, adding ip address
+	Managing namespace: creating, deleting, adding device to it, adding ip addresses
 	and routes are operations performed within PvD-manager and they aren't instant.
 	Maybe that is expected and "normal" since such operations aren't to be
 	performed frequently (only when something in network changes). However, when
 	testing frequent changes in PvDs (routers were connected and disconnected)
 	significant delay in PvD aware application was detected. Sometimes PvD-manager's
 	API server module (that is responsible for client communication) become
-	unresponsive for at least several seconds. This could be a bug in PvD-manager
-	or result of changes PvD-manager sent being applied by Linux kernel.
+	unresponsive for at least several seconds. The reason could be a suboptimal
+	implementation of PvD-manager, but also a side effect of inherently slow
+	process of network reconfiguration required by PvD-manager that should be
+	applied in the Linux kernel.
 </t>
 <t>
-	Recently added feature of Linux kernel (January, 2016), named
+	Recently added feature to the Linux kernel (January, 2016), named
 	<eref target="https://www.kernel.org/doc/Documentation/networking/vrf.txt">
-	Virtual Routing and Forwarding (VRF)</eref>, seems
-	possible alternative to namespaces. However, it should be investigate further
-	to create some conclusions.
+	Virtual Routing and Forwarding (VRF)</eref>, seems as a promising
+	alternative to network namespaces. However, a more thorough research is
+	needed to draw valid conclusions.
 </t>
 
 </section>
@@ -1624,7 +1630,7 @@ The initial goal of having network namespaces support in NetworkManager was achi
 		</reference>
 		<reference anchor="radvd" target="https://github.com/dskvorc/mif-radvd">
 		<front>
-			<title>PvD customized radvd daemon</title>
+			<title>PvD-aware router advertisements daemon (radvd)</title>
 			<author fullname="Dejan Skvorc"
 					initials="D." surname="Skvorc"
 					>
