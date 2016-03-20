@@ -14,10 +14,12 @@ Expires: September 6, 2016                          University of Zagreb
 
 Abstract
 
-   The purpose of this draft is to document two implementations that
-   tried to implement Provisioning Domains (PvD) architecture document.
-   One implementation was done from scratch (PvD-manager), while another
-   is part of an existing component (NetworkManager).
+   The purpose of this draft is to document two implementations which
+   implemented parts of PvD architecture document.  One implementation
+   was done from scratch (PvD-manager) while another is a part of an
+   existing component (NetworkManager).  The implementation of server
+   component was also done but only in IPv6 router.  DHCP was ignored
+   due to IPR claims.
 
 Status of This Memo
 
@@ -48,8 +50,6 @@ Copyright Notice
    carefully, as they describe your rights and restrictions with respect
    to this document.  Code Components extracted from this document must
    include Simplified BSD License text as described in Section 4.e of
-   the Trust Legal Provisions and are provided without warranty as
-   described in the Simplified BSD License.
 
 
 
@@ -57,6 +57,9 @@ Gros, et al.            Expires September 6, 2016               [Page 1]
 
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
+
+   the Trust Legal Provisions and are provided without warranty as
+   described in the Simplified BSD License.
 
 Table of Contents
 
@@ -71,40 +74,37 @@ Table of Contents
      3.5.  Test Scenarios  . . . . . . . . . . . . . . . . . . . . .  10
      3.6.  Experiences gained  . . . . . . . . . . . . . . . . . . .  11
        3.6.1.  Linux namespaces  . . . . . . . . . . . . . . . . . .  11
-   4.  NetworkManager implementation . . . . . . . . . . . . . . . .  12
+   4.  Implementing PvDs in NetworkManager . . . . . . . . . . . . .  12
      4.1.  NetworkManager's Current Behavior . . . . . . . . . . . .  13
      4.2.  The architecture and components . . . . . . . . . . . . .  14
-     4.3.  Support for network namespaces in NetworkManager  . . . .  14
-     4.4.  Options to support PvDs in NetworkManager . . . . . . . .  15
+     4.3.  Existing NetworkManager API . . . . . . . . . . . . . . .  15
+     4.4.  Options to support PvDs in NetworkManager . . . . . . . .  17
        4.4.1.  Using NMSettingsConnection object to store PvD and
-               PvD instance  . . . . . . . . . . . . . . . . . . . .  15
+               PvD instance  . . . . . . . . . . . . . . . . . . . .  17
        4.4.2.  Treating NMActiveConnection object as PvD instance
-               and PvD . . . . . . . . . . . . . . . . . . . . . . .  16
+               and PvD . . . . . . . . . . . . . . . . . . . . . . .  19
        4.4.3.  Using NMIP4Config and NMIP6Config objects for PvDs
-               and PvD instances . . . . . . . . . . . . . . . . . .  17
-       4.4.4.  PvD specific objects  . . . . . . . . . . . . . . . .  18
-     4.5.  Implementation  . . . . . . . . . . . . . . . . . . . . .  18
-       4.5.1.  Network namespace management  . . . . . . . . . . . .  19
-         4.5.1.1.  The idea  . . . . . . . . . . . . . . . . . . . .  19
-         4.5.1.2.  Implementation  . . . . . . . . . . . . . . . . .  20
-         4.5.1.3.  Conclusion  . . . . . . . . . . . . . . . . . . .  21
-       4.5.2.  Experimental PvD Implementation . . . . . . . . . . .  21
-     4.6.  Relationship to PvD Architecture  . . . . . . . . . . . .  22
-     4.7.  Experience gained and future work . . . . . . . . . . . .  22
-   5.  Server component  . . . . . . . . . . . . . . . . . . . . . .  22
-     5.1.  Router Advertisements (RA) message extension  . . . . . .  23
-     5.2.  Configuration file (radvd.conf) extension . . . . . . . .  25
-     5.3.  Example Usage . . . . . . . . . . . . . . . . . . . . . .  26
-   6.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .  29
-   7.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  29
-   8.  Security Considerations . . . . . . . . . . . . . . . . . . .  30
-   9.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  30
-     9.1.  Normative References  . . . . . . . . . . . . . . . . . .  30
-     9.2.  Informative References  . . . . . . . . . . . . . . . . .  30
-     9.3.  Implementation repositories . . . . . . . . . . . . . . .  31
-     9.4.  URIs  . . . . . . . . . . . . . . . . . . . . . . . . . .  31
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  31
-
+               and PvD instances . . . . . . . . . . . . . . . . . .  19
+       4.4.4.  PvD specific objects  . . . . . . . . . . . . . . . .  20
+     4.5.  Implementation  . . . . . . . . . . . . . . . . . . . . .  21
+       4.5.1.  Network namespace management  . . . . . . . . . . . .  21
+         4.5.1.1.  VPN isolation . . . . . . . . . . . . . . . . . .  23
+       4.5.2.  Experimental PvD Implementation . . . . . . . . . . .  24
+     4.6.  Experience gained and future work . . . . . . . . . . . .  24
+     4.7.  Relationship to PvD Architecture  . . . . . . . . . . . .  25
+   5.  Server component  . . . . . . . . . . . . . . . . . . . . . .  25
+     5.1.  Router Advertisements (RA) message extension  . . . . . .  25
+     5.2.  Configuration file (radvd.conf) extension . . . . . . . .  27
+     5.3.  Example Usage . . . . . . . . . . . . . . . . . . . . . .  28
+   6.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .  32
+   7.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  32
+   8.  Security Considerations . . . . . . . . . . . . . . . . . . .  33
+   9.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  33
+     9.1.  Normative References  . . . . . . . . . . . . . . . . . .  33
+     9.2.  Informative References  . . . . . . . . . . . . . . . . .  33
+     9.3.  Implementation repositories . . . . . . . . . . . . . . .  34
+     9.4.  URIs  . . . . . . . . . . . . . . . . . . . . . . . . . .  34
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  34
 
 
 
@@ -133,8 +133,8 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    First, the implementations are all done on modern Linux operating
    system, more specifically, Fedora Desktop distribution.  The main
    characteristic of this distribution is that the main IPC mechanism is
-   D-Bus.  So, D-Bus is also used by the two implementations described
-   in this draft.
+   D-Bus [dbus].  So, D-Bus is also used by the two implementations
+   described in this draft.
 
    Next, in the analysis phase, the implementations assessment was done
    to determine which mechanisms to use with the main goal of having
@@ -643,27 +643,27 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    alternative to network namespaces.  However, a more thorough research
    is needed to draw valid conclusions.
 
-4.  NetworkManager implementation
+4.  Implementing PvDs in NetworkManager
 
    NetworkManager is a software component used in modern Linux
    distributions to control network connections.  It runs as a daemon
    tracking and reacting to the network related events, either those
    coming from the network (like, for example, Router Advertisements) or
-   those from the local system (e.g. attachment of a new networking
-   device).  Furthermore, it exposes certain methods and properties over
-   D-Bus interface so that it can be controlled by different clients,
-   the most prominent being network manager applet and nmcli command
-   line tool.
+   those from the local system (e.g. user adding new network device,
+   like USB modem).  Furthermore, it exposes certain methods and
+   properties over D-Bus interface so that it can be controlled by
+   different clients, the most prominent being network manager applet
+   and nmcli command line tool.
 
    Due to its importance in the modern Linux distributions it was
    valuable experience to try to implement PvDs within it.  Yet,
    NetworkManager is a very complex piece of a software that wasn't
    designed with PvDs in mind so it wasn't straightforward task to try
    to implement them and there were some difficulties that had to be
-   overcome.  In the following text we'll first describe how
-   NetworkManager behaves now with respect to multiple PvDs, then we'll
-   describe one approach on how to add support for multiple PvDs.
-
+   dealt with.  In the following text we'll first describe how
+   NetworkManager behaves now in general and with respect to multiple
+   PvDs, then we'll describe one approach on how to add support for
+   multiple PvDs.
 
 
 
@@ -684,44 +684,44 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    we'll call "root network namespace" or "main network namespace".  So,
    all devices and all the configuration parameters are in one place.
 
-   The situations in which NetworkManager handles multiple provisioning
-   domains are:
+   NetworkManager already allows multiple configurations, that is
+   provisioning domains, to be received and activated/used in parallel.
+   The following sources of configuration data are possible:
 
    VPN Connections.
-         When user activates VPN connection upon successful
-         establishment of a connection, NetworkManager receives PvD
-         instance for the given VPN connection.  In some cases after
-         establishing VPN there is virtual device present (e.g.
-         OpenVPN), while in other cases there are no new devices but
-         only appropriate additions to the existing IP packet processing
-         path (e.g.  IPsec).  In any case, interface and the associated
-         PvD instance are assigned and present in the root network
-         namespace.  Furthermore, DNS data is also merged with existing
-         data.  It isn't hard to see that this mixing of PvD instances
-         might lead to very complex situations in which it is hard to
-         control which PvD instance will be used.  One possibility to
-         control what will be accessible is default route.  Namely, it
-         is possible to instruct NetworkManager not to install default
-         route via VPN PvD instance even though it was sent by VPN
-         gateway.
+         When user activates VPN connection NetworkManager receives PvD
+         instance.  In some cases, after establishing VPN there is
+         virtual device present (e.g.  OpenVPN), while in other cases
+         there are no new devices but only appropriate additions to the
+         existing IP packet processing path (e.g.  IPsec).  In any case,
+         interface and the associated PvD instance are assigned and
+         present in the root network namespace.  Furthermore, DNS data
+         is also merged with existing data (modification of /etc/
+         resolv.conf).
 
    Concurrent active wired and wireless connections.
          Again, like in the previous case, all the settings are mixed
          and this mixing has a consequence of not be able to use the two
-         connections in parallel.  Current policy that is enforced by
-         NetworkManager is to prefer wired connection for default route.
-         In other words, unless there are more specific routes that use
-         wireless connection, it will be not used while wired network
-         connection is used.
+         connections in parallel.  The only policy currently supported
+         by NetworkManager is to prefer wired connection for default
+         route.  In other words, when both wired and wireless
+         connections are used default route is installed to point to
+         wired connection.  So, unless there are no specific routes that
+         use wireless connection, it will not be used at all.
 
    Multiple IPv6 routers on a local network.
-         This is interesting use case even though it is not as common
-         now.  Namely, there is a possibility that there are two IPv6
+         This is interesting use case even though currently it is not so
+         common.  Namely, there is a possibility that there are two IPv6
          capable routers on the local network that overlap in
          connectivity.  What NetworkManager will do in this case is that
-         all PvDs received in RAs will be merged together per device.
+         all PvDs received in RAs will be merged together per device and
+         all addresses will be installed, routes will be in a routing
+         table and DNS configuration will be merged in /etc/resolv.conf
+         configuration file.
 
    Multiple concurrent DHCP servers on a local network.
+         This is a final use case that isn't possible by the current
+         protocol design.  Namely, DHCP offers received are treated as
 
 
 
@@ -730,53 +730,53 @@ Gros, et al.            Expires September 6, 2016              [Page 13]
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
-         This is a final use case that isn't possible by the current
-         protocol design.  Namely, DHCP offers received are treated as
          alternative and there is no way to have multiple concurrent
          DHCP servers on a single local network.
+
+   It isn't hard to see that NetworkManager mixes multiple PvD instances
+   that leads to very complex situations in which it is hard to control
+   which PvD instance will be used by applications.  There are standard
+   mechanisms, like source address selection, but no DNS selection, nor
+   destination address selection.  Some control is possible by default
+   route installation.  Namely, it is possible to instruct
+   NetworkManager not to install default route for specific connections
+   (like for example VPN) even though default route was received as a
+   part of the configuration.  NetworkManager uses this mechanism to
+   enforce some simple policies, like to give a preference to wired over
+   wireless connection.
+
+   Applications don't have any control of network configurations they
+   use and there is no standard way for applications to find out what
+   specific connection offer in terms of quality of service, cost and
+   reachability.
 
 4.2.  The architecture and components
 
    We can describe NetworkManager in terms of static architecture and
    runtime behavior.  The static architecture is reflected by the source
-   code organization.  The purpose of this draft is only to present
-   NetworkManager itself, but take into account that there are
-   additional components, too which we'll not cover.
+   code organization and libraries and external programs used.  The
+   purpose of this draft is only to present the core of the
+   NetworkManager, but take into account that there are some additional
+   components which we'll not cover.
 
-   So, the NetworkManager's code is in src/ subdirectory of top-level
-   directory.  There you'll find the following subdirectories and files.
-   Note that we don't cover everything in there but only important parts
-   for the implementation of provisioning domains.
+   When the source code archive of NetworkManager is unpacked, there is
+   a src/ subdirectory of top-level directory.  This is the main part of
+   the NetworkManager and there you'll find the following subdirectories
+   and files:
 
    devices/
-         Objects that allow management of networking devices.
+         Objects that allow management of networking devices.  By
+         management it is meant tracking status of devices, network
+         configuration data applied to devices, but also creating and
+         removing devices of a certain types.
+
+   dhcp-manager/
+         DHCP manager (object that controls DHCP clients) and an object/
+         class for each DHCP client supported.  NetworkManager supports
+         several DHCP clients: internal, ISC's dhclient, and systemd.
+         By default, ISC's client is used.
 
    platform/
-         Platform specific code that isolates NetworkManager from
-         specifics of a certain operating system.  The only supported
-         platform at the time this draft was written was for Linux.
-
-   rdisc/
-         Objects that are used to send/receive RA/RS messages.  There is
-         a platform independent object and platform dependent objects.
-         Platform dependent objects do real receive/send events.
-
-   settings/
-         In this subdirectory are objects that represent connections
-         (NMSettingsConnection) and a singleton object that manages all
-         connection objects.
-
-   vpn-manager/
-         Object to manage VPN connections.
-
-   nm-manager
-         This is the main object, NMManager, that controls everything.
-
-4.3.  Support for network namespaces in NetworkManager
-
-
-
-
 
 
 
@@ -785,6 +785,129 @@ Gros, et al.            Expires September 6, 2016              [Page 14]
 
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
+
+         Platform specific code that isolates NetworkManager from
+         specifics of a certain operating system.  The only supported
+         platform at the time this draft was written was for Linux.
+         Platform is used to communicate with network specific parts
+         within the Linux kernel operating system.
+
+   rdisc/
+         Objects that are used to send/receive RA/RS messages.  There is
+         a platform independent object and platform dependent objects.
+         Platform dependent objects do real receive/send events.
+         NetworkManager uses libndp library here to send, receive and
+         parse RA and RS messages.
+
+   settings/
+         In this subdirectory are objects that represent connections
+         (NMSettingsConnection) and a singleton object that manages all
+         connection objects.
+
+   vpn-manager/
+         Object to manage VPN connections and NMVPNConnection object
+         that is instantiated for each VPN established.  Handling of
+         external daemons is placed in separate software not part of the
+         NetworkManager core archive.
+
+   nm-manager
+         This is the main object, NMManager, that controls everything.
+
+4.3.  Existing NetworkManager API
+
+   NetworkManager has an API that is targed primarily to management
+   applications.  It can be used by networking application also, but it
+   isn't currently the case.  Probably the reason for this is restricted
+   functionality of the API in the sense that applications couldn't gain
+   much by using it.
+
+   There are two important concepts necessary to understand the API
+   provided by NetworkManager:
+
+      NetworkManager exposes object over D-Bus.  By exposing it is meant
+      that applications can found out about them, query them, invoke
+      methods on them, etc.  Objects are parts of NetworkManager, and in
+      the previous section we mentioned them.  Some objects are
+      permanent throughout the life cycle of NetworkManager like
+      NetworkManager, i.e. NMManager itself, while some are dynamic like
+      NMDevices and NMActiveConnections that come and go depending on
+      the current state of networking on a particular node.
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 15]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+      Each object implements one or more interfaces, usually only one.
+      Intarface contains methods, properties (variables) and signals.
+      Methods allow callers to initiate some action on an object,
+      properties hold state of the object, while signals are
+      asynchronous mechanisms used to notify interested parties that
+      something changed on an object.
+
+   The API is accessible over D-Bus in a raw form but there are wrappers
+   for C programming language (libnm), and wrapper for Python that allow
+   easier use of the API.  Because any application can invoke methods on
+   objects, some of which are system wide, there is authorization
+   framework within API that is used to control who is allowed to access
+   certain objects.
+
+   Some more interesting objects exposed through this API are:
+
+   NMManager
+         The main object, NetworkManager itself.  It has methods to
+         activate and deactivate connections, add new connections, check
+         connectivity, etc.
+
+   NMSettingsConnection
+         A specific connection in NetworkManager is represented with
+         this object.  It consists of settings necessary to establish,
+         maintain, and terminate a connection.  There are many objects
+         of this type (class) and they are initialized from system
+         files.  Note that this object is used for wired, wireless, VPN
+         and any other connection.
+
+   NMSettings
+         Singleton object that manages all the connection settings, that
+         is NMSettingsConnection objects in a NetworkManager.  Through
+         this object it is possible to get a list of all configured
+         connections on a host.
+
+   NMDevice
+         Object, one per network interface on a system, that stores
+         information about network interface and allows the interface to
+         be managed (activated, deactivated, etc.).
+
+   NMActiveConnection
+         This object represents each activated connection on a node.
+
+   Some more interesting methods exposed through this API are:
+
+   method:ActivateConnection
+         This is a method on a main NMManager object that is used to
+         activate connection.  So, for example, when user selects on
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 16]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+         option to activate WiFi connection, the user action ends by
+         calling this method on NetworkManager.
+
+   method:AddAndActivateConnection
+         This method allows a new connection to be added and immediately
+         activated.  Also available on NMManager object.
+
+   property:ActiveConnections
+         Property that contains a list of active connections.  Exposed
+         on NMManager object.
 
 4.4.  Options to support PvDs in NetworkManager
 
@@ -824,6 +947,13 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    modification to NMSettingsConnection should be extended with PvD ID
    parameter.
 
+
+
+Gros, et al.            Expires September 6, 2016              [Page 17]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
    There are several potential problems with this approach:
 
       There is a difference between NMSettingsConnection on the one
@@ -834,14 +964,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
       NMSettingsConnection can be the same as PvD instance.  This is the
       case with static IPv4 configurations when a user specifies
       concrete IP addresses.  Finally, NMSettingsConnection can be PvD
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 15]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
-
       only in the case of IPv6 when host part is generated from MAC
       address.
 
@@ -876,6 +998,18 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    modifying certain aspects of the NetworkManager in general, and
    NMSettingsObject in particular.
 
+
+
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 18]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
 4.4.2.  Treating NMActiveConnection object as PvD instance and PvD
 
    Whenever a connection is made in NetworkManager an object is created.
@@ -890,13 +1024,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    The idea in this case is to treat NMActiveConnection as a PvD or a
    PvD instance, i.e. on each new PvD or PvD instance received new
    NMActiveConnection is created.
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 16]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
 
    But, there are still some problems:
 
@@ -932,6 +1059,13 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    way they are PvDs in a sense that each of them contains enough
    information to allow connection to the network.
 
+
+
+Gros, et al.            Expires September 6, 2016              [Page 19]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
    The problem is that internally NetworkManager keeps a single IPv4/
    IPv6 configuration object per device and in addition it merges all
    received configuration data on a single interface.
@@ -945,14 +1079,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    within each RA.  What would be necessary is to change this structure
    so that configuration data is kept separate for each router and
    provisioning domain.
-
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 17]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
 
    The problems in this case are:
 
@@ -987,6 +1113,15 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    after the connection is established, appropriate PvD is searched for,
    or new one is created.
 
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 20]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
    This is most intrusive change that would require change in APIs and
    thus break compatibility with the existing applications (or require a
    completely new API).
@@ -1000,15 +1135,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
    The implementation of PvD support within NetworkManager was done with
    the following requirements in mind:
-
-
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 18]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
 
       For backwards compatibility there should be a root network
       namespace which is handled by NetworkManager as before, i.e.  it
@@ -1036,8 +1162,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    in NetworkManager that was a bit different in some implementation
    details from mine but intends to use certain functionality.
 
-4.5.1.1.  The idea
-
    The intention of implementing support for network namespaces was to
    allow applications to be isolated so that they use specific network
    connections.  Network namespaces in Linux kernel have some properties
@@ -1045,6 +1169,15 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
    So, an application can not be moved between different network
    namespace by some other application, i.e. only application itself can
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 21]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
    change network namespaces, and only if it has appropriate
    permissions.
 
@@ -1058,20 +1191,10 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    changes can be activation and deactivation of certain connections.
    NetworkManager, based on those requests and on specifics of
    connections and devices those connections are bound to, determines
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 19]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
-
    what to do.  For example, it can create virtual device in the network
    namespace, or can move physical device.  Basically, this part isn't
    important to the application itself, the only thing that is important
    is that the application is assigned requested connections.
-
-4.5.1.2.  Implementation
 
    The following changes were made to NetworkManager in order to
    introduce support for network namespaces:
@@ -1101,7 +1224,17 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    objects any more.  They are now instantiated for each new network
    namespace that is created.
 
-4.5.1.2.1.  VPN isolation
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 22]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+4.5.1.1.  VPN isolation
 
    VPN isolation was done as a first user of network namespaces
    implementation.  It was easier then other connections because the
@@ -1114,14 +1247,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    is actually a base class of NMVPNConnection class.  The modification
    of NMVPNConnection approach is better for the following reason
    because the idea was to introduce new configuration parameter in the
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 20]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
-
    configuration file of a VPN connection that will specify that
    isolation is necessary and also some additional behaviors:
 
@@ -1157,27 +1282,19 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    hostname and name resolution parameters aren't assigned because the
    infrastructure is lacking in that respect.
 
-4.5.1.3.  Conclusion
 
-   The initial goal of having network namespaces support in
-   NetworkManager was achieved.  There are functionalities missing like
-   isolation of any connection, hostname handling and DNS resolution
-   handling.  Those are things that will have to be resolved in the
-   future.
+
+
+Gros, et al.            Expires September 6, 2016              [Page 23]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
 
 4.5.2.  Experimental PvD Implementation
 
    The first implementation of PvDs was done using NMIP6Config as a PvD
    container.  Before describing the implementation we have to state
    that the only mechanism currently able to carry PvDs is RA messages.
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 21]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
-
    NMIP6Config objects are extended with PvD ID field.  At first, there
    was support for different types of PvD IDs and the first implemented
    type was UUID stored in ASCII format.  Later in the development
@@ -1198,9 +1315,38 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    interface.  This information is then exposed through
    NMActiveConnection object.
 
-4.6.  Relationship to PvD Architecture
+4.6.  Experience gained and future work
 
-4.7.  Experience gained and future work
+   The current work is focused on design of appropriate API exposed over
+   D-Bus that would allow applications to activate and deactivate
+   specific PvDs.  It is not yet finished, but two principles emerged:
+
+      The changes to the existing API should be minimal.  In other words
+      we try to avoid introducing parallel API to the existing one.
+
+      Applications should be isolated from specifics of a network
+      configuration, i.e. they shouldn't know or care which devices
+      contain specific PvDs or how they should be composed, etc.
+
+   After this is resolved, there are at least few more things that have
+   to be sorted out before it can be considered the work to be finished:
+
+      Host name management has to be properly handled.  Currently, this
+      is ignored by PvD handling code within NetworkManager.
+
+      DNS resolution is also currently lacking, specially considering
+      existing RFCs that allow domains to be specified for each DNS
+      server and the new drafts that appeared recently in MIF WG.
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 24]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
+4.7.  Relationship to PvD Architecture
 
 5.  Server component
 
@@ -1224,15 +1370,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    be able to configure PvD-related network information on their network
    interfaces.  New option introduced into the RA message is silently
    ignored by non-PvD-aware clients if they are implemented correctly.
-
-
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 22]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
 
 5.1.  Router Advertisements (RA) message extension
 
@@ -1258,6 +1395,13 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    announced in RA message.  Figure 4 shows the structure of the PVD_CO
    option used in proposed MIF architecture implementation.
 
+
+
+Gros, et al.            Expires September 6, 2016              [Page 25]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -1280,15 +1424,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    octets long padding filled with zeros.  The rest of the option
    contains encapsulated NDP options that describe particular PvD-
    related network parameters.
-
-
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 23]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
 
    The following NDP options are allowed to appear within the PVD_CO
    option:
@@ -1313,6 +1448,15 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    structure of the PVD_ID option is proposed in [I-D.ietf-mif-mpvd-id].
    For the pupose of this MIF architecture implementation, a slightly
    simplified structure is used, as shown in Figure 5.
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 26]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
 
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -1339,13 +1483,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    format.  Consequently, id-length field is always set to 36,
    determining the length of UUID.
 
-
-
-Gros, et al.            Expires September 6, 2016              [Page 24]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
-
    Other options nested within the PVD_CO option follow a standardized
    structure defined in corresponding NDP documents.  Each of the nested
    options MAY appear zero or more times per PVD_CO option.
@@ -1368,6 +1505,14 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    Figure 6 shows a general structure of the radvd configuration file
    extended with new configuration section for specifying PvD-related
    network configuration information.
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 27]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
 
      interface name {
          list of interface specific options
@@ -1394,14 +1539,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    Figure 7 shows the structure of the radvd.conf's configuration
    directive for PvD definition.  PvD configuration block starts with
    "pvd" keyword followed by UUID that represents the PvD identifier.
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 25]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
-
    The body of the pvd block contains zero or more definitions for
    prefix, route, RDNSS, and DNSSL.  Definitions used inside the pvd
    block follow the same syntax as when they appear in the upper level
@@ -1425,6 +1562,14 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    identity (implicit PvDs), and 2) those belonging to explicitly
    identified PvDs (explicit PvDs).  In the example given, radvd
    announces three sets of network configuration information, one
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 28]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
    belonging to implicit, and two belonging to explicit PvD.  As
    implicit PvD, it announces only the prefix information
    (2001:db8:1111:2222::/64).  For the first explicit PvD, radvd
@@ -1453,7 +1598,30 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
 
-Gros, et al.            Expires September 6, 2016              [Page 26]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Gros, et al.            Expires September 6, 2016              [Page 29]
 
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
@@ -1509,7 +1677,7 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
 
-Gros, et al.            Expires September 6, 2016              [Page 27]
+Gros, et al.            Expires September 6, 2016              [Page 30]
 
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
@@ -1565,7 +1733,7 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
 
-Gros, et al.            Expires September 6, 2016              [Page 28]
+Gros, et al.            Expires September 6, 2016              [Page 31]
 
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
@@ -1621,7 +1789,7 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
 
-Gros, et al.            Expires September 6, 2016              [Page 29]
+Gros, et al.            Expires September 6, 2016              [Page 32]
 
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
@@ -1655,6 +1823,9 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 9.2.  Informative References
 
+   [dbus]     "D-Bus", March 2016,
+              <https://www.freedesktop.org/wiki/Software/dbus/>.
+
    [I-D.ietf-mif-mpvd-dhcp-support]
               Krishnan, S., Korhonen, J., and S. Bhandari, "Support for
               multiple provisioning domains in DHCPv6", draft-ietf-mif-
@@ -1674,10 +1845,7 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
 
-
-
-
-Gros, et al.            Expires September 6, 2016              [Page 30]
+Gros, et al.            Expires September 6, 2016              [Page 33]
 
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
@@ -1733,7 +1901,7 @@ Authors' Addresses
 
 
 
-Gros, et al.            Expires September 6, 2016              [Page 31]
+Gros, et al.            Expires September 6, 2016              [Page 34]
 
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
@@ -1789,4 +1957,4 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
 
-Gros, et al.            Expires September 6, 2016              [Page 32]
+Gros, et al.            Expires September 6, 2016              [Page 35]
