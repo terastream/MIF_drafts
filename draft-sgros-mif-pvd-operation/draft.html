@@ -1,0 +1,741 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head profile="http://www.w3.org/2006/03/hcard http://dublincore.org/documents/2008/08/04/dc-html/">
+  <meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+
+  <title>Configuring hosts with multiple provisioning domains using NDP</title>
+
+  <style type="text/css" title="Xml2Rfc (sans serif)">
+  /*<![CDATA[*/
+	  a {
+	  text-decoration: none;
+	  }
+      /* info code from SantaKlauss at http://www.madaboutstyle.com/tooltip2.html */
+      a.info {
+          /* This is the key. */
+          position: relative;
+          z-index: 24;
+          text-decoration: none;
+      }
+      a.info:hover {
+          z-index: 25;
+          color: #FFF; background-color: #900;
+      }
+      a.info span { display: none; }
+      a.info:hover span.info {
+          /* The span will display just on :hover state. */
+          display: block;
+          position: absolute;
+          font-size: smaller;
+          top: 2em; left: -5em; width: 15em;
+          padding: 2px; border: 1px solid #333;
+          color: #900; background-color: #EEE;
+          text-align: left;
+      }
+	  a.smpl {
+	  color: black;
+	  }
+	  a:hover {
+	  text-decoration: underline;
+	  }
+	  a:active {
+	  text-decoration: underline;
+	  }
+	  address {
+	  margin-top: 1em;
+	  margin-left: 2em;
+	  font-style: normal;
+	  }
+	  body {
+	  color: black;
+	  font-family: verdana, helvetica, arial, sans-serif;
+	  font-size: 10pt;
+	  max-width: 55em;
+	  
+	  }
+	  cite {
+	  font-style: normal;
+	  }
+	  dd {
+	  margin-right: 2em;
+	  }
+	  dl {
+	  margin-left: 2em;
+	  }
+	
+	  ul.empty {
+	  list-style-type: none;
+	  }
+	  ul.empty li {
+	  margin-top: .5em;
+	  }
+	  dl p {
+	  margin-left: 0em;
+	  }
+	  dt {
+	  margin-top: .5em;
+	  }
+	  h1 {
+	  font-size: 14pt;
+	  line-height: 21pt;
+	  page-break-after: avoid;
+	  }
+	  h1.np {
+	  page-break-before: always;
+	  }
+	  h1 a {
+	  color: #333333;
+	  }
+	  h2 {
+	  font-size: 12pt;
+	  line-height: 15pt;
+	  page-break-after: avoid;
+	  }
+	  h3, h4, h5, h6 {
+	  font-size: 10pt;
+	  page-break-after: avoid;
+	  }
+	  h2 a, h3 a, h4 a, h5 a, h6 a {
+	  color: black;
+	  }
+	  img {
+	  margin-left: 3em;
+	  }
+	  li {
+	  margin-left: 2em;
+	  margin-right: 2em;
+	  }
+	  ol {
+	  margin-left: 2em;
+	  margin-right: 2em;
+	  }
+	  ol p {
+	  margin-left: 0em;
+	  }
+	  p {
+	  margin-left: 2em;
+	  margin-right: 2em;
+	  }
+	  pre {
+	  margin-left: 3em;
+	  background-color: lightyellow;
+	  padding: .25em;
+	  }
+	  pre.text2 {
+	  border-style: dotted;
+	  border-width: 1px;
+	  background-color: #f0f0f0;
+	  width: 69em;
+	  }
+	  pre.inline {
+	  background-color: white;
+	  padding: 0em;
+	  }
+	  pre.text {
+	  border-style: dotted;
+	  border-width: 1px;
+	  background-color: #f8f8f8;
+	  width: 69em;
+	  }
+	  pre.drawing {
+	  border-style: solid;
+	  border-width: 1px;
+	  background-color: #f8f8f8;
+	  padding: 2em;
+	  }
+	  table {
+	  margin-left: 2em;
+	  }
+	  table.tt {
+	  vertical-align: top;
+	  }
+	  table.full {
+	  border-style: outset;
+	  border-width: 1px;
+	  }
+	  table.headers {
+	  border-style: outset;
+	  border-width: 1px;
+	  }
+	  table.tt td {
+	  vertical-align: top;
+	  }
+	  table.full td {
+	  border-style: inset;
+	  border-width: 1px;
+	  }
+	  table.tt th {
+	  vertical-align: top;
+	  }
+	  table.full th {
+	  border-style: inset;
+	  border-width: 1px;
+	  }
+	  table.headers th {
+	  border-style: none none inset none;
+	  border-width: 1px;
+	  }
+	  table.left {
+	  margin-right: auto;
+	  }
+	  table.right {
+	  margin-left: auto;
+	  }
+	  table.center {
+	  margin-left: auto;
+	  margin-right: auto;
+	  }
+	  caption {
+	  caption-side: bottom;
+	  font-weight: bold;
+	  font-size: 9pt;
+	  margin-top: .5em;
+	  }
+	
+	  table.header {
+	  border-spacing: 1px;
+	  width: 95%;
+	  font-size: 10pt;
+	  color: white;
+	  }
+	  td.top {
+	  vertical-align: top;
+	  }
+	  td.topnowrap {
+	  vertical-align: top;
+	  white-space: nowrap; 
+	  }
+	  table.header td {
+	  background-color: gray;
+	  width: 50%;
+	  }
+	  table.header a {
+	  color: white;
+	  }
+	  td.reference {
+	  vertical-align: top;
+	  white-space: nowrap;
+	  padding-right: 1em;
+	  }
+	  thead {
+	  display:table-header-group;
+	  }
+	  ul.toc, ul.toc ul {
+	  list-style: none;
+	  margin-left: 1.5em;
+	  margin-right: 0em;
+	  padding-left: 0em;
+	  }
+	  ul.toc li {
+	  line-height: 150%;
+	  font-weight: bold;
+	  font-size: 10pt;
+	  margin-left: 0em;
+	  margin-right: 0em;
+	  }
+	  ul.toc li li {
+	  line-height: normal;
+	  font-weight: normal;
+	  font-size: 9pt;
+	  margin-left: 0em;
+	  margin-right: 0em;
+	  }
+	  li.excluded {
+	  font-size: 0pt;
+	  }
+	  ul p {
+	  margin-left: 0em;
+	  }
+	
+	  .comment {
+	  background-color: yellow;
+	  }
+	  .center {
+	  text-align: center;
+	  }
+	  .error {
+	  color: red;
+	  font-style: italic;
+	  font-weight: bold;
+	  }
+	  .figure {
+	  font-weight: bold;
+	  text-align: center;
+	  font-size: 9pt;
+	  }
+	  .filename {
+	  color: #333333;
+	  font-weight: bold;
+	  font-size: 12pt;
+	  line-height: 21pt;
+	  text-align: center;
+	  }
+	  .fn {
+	  font-weight: bold;
+	  }
+	  .hidden {
+	  display: none;
+	  }
+	  .left {
+	  text-align: left;
+	  }
+	  .right {
+	  text-align: right;
+	  }
+	  .title {
+	  color: #990000;
+	  font-size: 18pt;
+	  line-height: 18pt;
+	  font-weight: bold;
+	  text-align: center;
+	  margin-top: 36pt;
+	  }
+	  .vcardline {
+	  display: block;
+	  }
+	  .warning {
+	  font-size: 14pt;
+	  background-color: yellow;
+	  }
+	
+	
+	  @media print {
+	  .noprint {
+		display: none;
+	  }
+	
+	  a {
+		color: black;
+		text-decoration: none;
+	  }
+	
+	  table.header {
+		width: 90%;
+	  }
+	
+	  td.header {
+		width: 50%;
+		color: black;
+		background-color: white;
+		vertical-align: top;
+		font-size: 12pt;
+	  }
+	
+	  ul.toc a::after {
+		content: leader('.') target-counter(attr(href), page);
+	  }
+	
+	  ul.ind li li a {
+		content: target-counter(attr(href), page);
+	  }
+	
+	  .print2col {
+		column-count: 2;
+		-moz-column-count: 2;
+		column-fill: auto;
+	  }
+	  }
+	
+	  @page {
+	  @top-left {
+		   content: "Internet-Draft"; 
+	  } 
+	  @top-right {
+		   content: "December 2010"; 
+	  } 
+	  @top-center {
+		   content: "Abbreviated Title";
+	  } 
+	  @bottom-left {
+		   content: "Doe"; 
+	  } 
+	  @bottom-center {
+		   content: "Expires June 2011"; 
+	  } 
+	  @bottom-right {
+		   content: "[Page " counter(page) "]"; 
+	  } 
+	  }
+	
+	  @page:first { 
+		@top-left {
+		  content: normal;
+		}
+		@top-right {
+		  content: normal;
+		}
+		@top-center {
+		  content: normal;
+		}
+	  }
+  /*]]>*/
+  </style>
+
+  <link href="#rfc.toc" rel="Contents"/>
+<link href="#rfc.section.1" rel="Chapter" title="1 Introduction"/>
+<link href="#rfc.section.1.1" rel="Chapter" title="1.1 Requirements Language"/>
+<link href="#rfc.section.2" rel="Chapter" title="2 Options to configure hosts with PvDs"/>
+<link href="#rfc.section.2.1" rel="Chapter" title="2.1 Unsolicited RAs"/>
+<link href="#rfc.section.2.1.1" rel="Chapter" title="2.1.1 Sending all PvDs in every RA (A1)"/>
+<link href="#rfc.section.2.1.2" rel="Chapter" title="2.1.2 Sending subset of PvDs in every RA (A2)"/>
+<link href="#rfc.section.2.1.3" rel="Chapter" title="2.1.3 Sending implicit PvD with a list of PvD IDs (A3)"/>
+<link href="#rfc.section.2.1.4" rel="Chapter" title="2.1.4 Sending only implicit PvD (A4)"/>
+<link href="#rfc.section.2.2" rel="Chapter" title="2.2 Solicited RAs"/>
+<link href="#rfc.section.2.2.1" rel="Chapter" title="2.2.1 RS without any change (B1)"/>
+<link href="#rfc.section.2.2.2" rel="Chapter" title="2.2.2 RS with indication of PvD support (B2)"/>
+<link href="#rfc.section.2.2.3" rel="Chapter" title="2.2.3 RS with request for specific PvDs (B3)"/>
+<link href="#rfc.section.3" rel="Chapter" title="3 Implementation aspects"/>
+<link href="#rfc.section.4" rel="Chapter" title="4 Sequence of steps to configure PvD on a host"/>
+<link href="#rfc.section.4.1" rel="Chapter" title="4.1 Implemented option"/>
+<link href="#rfc.section.4.2" rel="Chapter" title="4.2 Optimal case"/>
+<link href="#rfc.section.5" rel="Chapter" title="5 PvD characteristics description"/>
+<link href="#rfc.section.6" rel="Chapter" title="6 Encapsulating PvDs in RAs"/>
+<link href="#rfc.section.7" rel="Chapter" title="7 Acknowledgements"/>
+<link href="#rfc.section.8" rel="Chapter" title="8 IANA Considerations"/>
+<link href="#rfc.section.9" rel="Chapter" title="9 Security Considerations"/>
+<link href="#rfc.references" rel="Chapter" title="10 References"/>
+<link href="#rfc.references.1" rel="Chapter" title="10.1 Normative References"/>
+<link href="#rfc.references.2" rel="Chapter" title="10.2 Informative References"/>
+<link href="#rfc.authors" rel="Chapter"/>
+
+
+  <meta name="generator" content="xml2rfc version 2.5.1 - http://tools.ietf.org/tools/xml2rfc" />
+  <link rel="schema.dct" href="http://purl.org/dc/terms/" />
+
+  <meta name="dct.creator" content="Gros, S., Ed., Jelenkovic, L., and D. Skvorc" />
+  <meta name="dct.identifier" content="urn:ietf:id:draft-sgros-dhcp-and-ipr-claim-analysis-00" />
+  <meta name="dct.issued" scheme="ISO8601" content="2015-11-23" />
+  <meta name="dct.abstract" content="The purpose of this draft is to present experiences gained while trying to implement support for PVDs in the Linux operating system. Two prototype implementations were done as a part of this endeavor, one from scratch and another as a part of existing component (NetworkManager). The implementations themselves are described in a separate document while this one is about topics independent from particular system, i.e. more in line with the networking standardization.  " />
+  <meta name="description" content="The purpose of this draft is to present experiences gained while trying to implement support for PVDs in the Linux operating system. Two prototype implementations were done as a part of this endeavor, one from scratch and another as a part of existing component (NetworkManager). The implementations themselves are described in a separate document while this one is about topics independent from particular system, i.e. more in line with the networking standardization.  " />
+
+</head>
+
+<body>
+
+  <table class="header">
+    <tbody>
+    
+    	<tr>
+  <td class="left">Internet Engineering Task Force</td>
+  <td class="right">S. Gros, Ed.</td>
+</tr>
+<tr>
+  <td class="left">Internet-Draft</td>
+  <td class="right">L. Jelenkovic</td>
+</tr>
+<tr>
+  <td class="left">Intended status: Informational</td>
+  <td class="right">D. Skvorc</td>
+</tr>
+<tr>
+  <td class="left">Expires: May 26, 2016</td>
+  <td class="right">University of Zagreb</td>
+</tr>
+<tr>
+  <td class="left"></td>
+  <td class="right">November 23, 2015</td>
+</tr>
+
+    	
+    </tbody>
+  </table>
+
+  <p class="title">Configuring hosts with multiple provisioning domains using NDP<br />
+  <span class="filename">draft-sgros-dhcp-and-ipr-claim-analysis-00</span></p>
+  
+  <h1 id="rfc.abstract">
+  <a href="#rfc.abstract">Abstract</a>
+</h1>
+<p>The purpose of this draft is to present experiences gained while trying to implement support for PVDs in the Linux operating system. Two prototype implementations were done as a part of this endeavor, one from scratch and another as a part of existing component (NetworkManager). The implementations themselves are described in a separate document while this one is about topics independent from particular system, i.e. more in line with the networking standardization.  </p>
+<h1 id="rfc.status">
+  <a href="#rfc.status">Status of This Memo</a>
+</h1>
+<p>This Internet-Draft is submitted in full conformance with the provisions of BCP 78 and BCP 79.</p>
+<p>Internet-Drafts are working documents of the Internet Engineering Task Force (IETF).  Note that other groups may also distribute working documents as Internet-Drafts.  The list of current Internet-Drafts is at http://datatracker.ietf.org/drafts/current/.</p>
+<p>Internet-Drafts are draft documents valid for a maximum of six months and may be updated, replaced, or obsoleted by other documents at any time.  It is inappropriate to use Internet-Drafts as reference material or to cite them other than as "work in progress."</p>
+<p>This Internet-Draft will expire on May 26, 2016.</p>
+<h1 id="rfc.copyrightnotice">
+  <a href="#rfc.copyrightnotice">Copyright Notice</a>
+</h1>
+<p>Copyright (c) 2015 IETF Trust and the persons identified as the document authors.  All rights reserved.</p>
+<p>This document is subject to BCP 78 and the IETF Trust's Legal Provisions Relating to IETF Documents (http://trustee.ietf.org/license-info) in effect on the date of publication of this document.  Please review these documents carefully, as they describe your rights and restrictions with respect to this document.  Code Components extracted from this document must include Simplified BSD License text as described in Section 4.e of the Trust Legal Provisions and are provided without warranty as described in the Simplified BSD License.</p>
+
+  
+  <hr class="noprint" />
+  <h1 class="np" id="rfc.toc"><a href="#rfc.toc">Table of Contents</a></h1>
+  <ul class="toc">
+
+  	<li>1.   <a href="#rfc.section.1">Introduction</a></li>
+<ul><li>1.1.   <a href="#rfc.section.1.1">Requirements Language</a></li>
+</ul><li>2.   <a href="#rfc.section.2">Options to configure hosts with PvDs</a></li>
+<ul><li>2.1.   <a href="#rfc.section.2.1">Unsolicited RAs</a></li>
+<ul><li>2.1.1.   <a href="#rfc.section.2.1.1">Sending all PvDs in every RA (A1)</a></li>
+<li>2.1.2.   <a href="#rfc.section.2.1.2">Sending subset of PvDs in every RA (A2)</a></li>
+<li>2.1.3.   <a href="#rfc.section.2.1.3">Sending implicit PvD with a list of PvD IDs (A3)</a></li>
+<li>2.1.4.   <a href="#rfc.section.2.1.4">Sending only implicit PvD (A4)</a></li>
+</ul><li>2.2.   <a href="#rfc.section.2.2">Solicited RAs</a></li>
+<ul><li>2.2.1.   <a href="#rfc.section.2.2.1">RS without any change (B1)</a></li>
+<li>2.2.2.   <a href="#rfc.section.2.2.2">RS with indication of PvD support (B2)</a></li>
+<li>2.2.3.   <a href="#rfc.section.2.2.3">RS with request for specific PvDs (B3)</a></li>
+</ul></ul><li>3.   <a href="#rfc.section.3">Implementation aspects</a></li>
+<li>4.   <a href="#rfc.section.4">Sequence of steps to configure PvD on a host</a></li>
+<ul><li>4.1.   <a href="#rfc.section.4.1">Implemented option</a></li>
+<li>4.2.   <a href="#rfc.section.4.2">Optimal case</a></li>
+</ul><li>5.   <a href="#rfc.section.5">PvD characteristics description</a></li>
+<li>6.   <a href="#rfc.section.6">Encapsulating PvDs in RAs</a></li>
+<li>7.   <a href="#rfc.section.7">Acknowledgements</a></li>
+<li>8.   <a href="#rfc.section.8">IANA Considerations</a></li>
+<li>9.   <a href="#rfc.section.9">Security Considerations</a></li>
+<li>10.   <a href="#rfc.references">References</a></li>
+<ul><li>10.1.   <a href="#rfc.references.1">Normative References</a></li>
+<li>10.2.   <a href="#rfc.references.2">Informative References</a></li>
+</ul><li><a href="#rfc.authors">Authors' Addresses</a></li>
+
+
+  </ul>
+
+  <h1 id="rfc.section.1"><a href="#rfc.section.1">1.</a> Introduction</h1>
+<p id="rfc.section.1.p.1">The purpose of this draft is to present experiences gained while trying to implement support for PVDs in the Linux operating system. Two prototype implementations were done as a part of this endeavor, one from scratch and another as a part of existing component (NetworkManager). The implementations themselves are described in a separate document while this one is about topics independent from particular system, i.e. more in line with the networking standardization.  </p>
+<h1 id="rfc.section.1.1"><a href="#rfc.section.1.1">1.1.</a> Requirements Language</h1>
+<p id="rfc.section.1.1.p.1">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in <a href="#RFC2119">RFC 2119</a> <cite title="NONE">[RFC2119]</cite>.</p>
+<h1 id="rfc.section.2"><a href="#rfc.section.2">2.</a> <a href="#client_configuration" id="client_configuration">Options to configure hosts with PvDs</a></h1>
+<p id="rfc.section.2.p.1">When a router has multiple PvDs there are several options to send this information to hosts on a local network. We'll group them into two orthogonal cases. The first group are options for unsolicited RAs: </p>
+<p/>
+
+<ul>
+  <li>Option A1. In every RA router sends all known PvDs, implicit and explicit.  </li>
+  <li>Option A2. In every RA router sends a subset of known PvDs, implicit and explicit. Others are available upon request by hosts.  </li>
+  <li>Option A3. Router sends RAs with a list of all PvD IDs it knows of.  </li>
+  <li>Option A4. Router sends RAs with only implicit PvD and indication that it supports PvD.  </li>
+</ul>
+<p id="rfc.section.2.p.3">The second group are options when there is solicitation. In this case the options are: </p>
+<p/>
+
+<ul>
+  <li>Option B1. When host sends RS it doesn't include any special options about PvD. Router sends RA with all PvDs included.  </li>
+  <li>Option B2. When host sends RS it includes an option that indicates host's support for PvDs. Router sends RA with all PvDs included.  If the host doesn't include option to indicate PvD support, the router doesn't send any PvDs.  </li>
+  <li>Option B3. When host sends RS it can include a list of PvD IDs and in that way requests information about specific PvD. There could be a wildcard PvD ID that signals to router that every known PvD should be sent in the RA.  </li>
+</ul>
+<p/>
+<h1 id="rfc.section.2.1"><a href="#rfc.section.2.1">2.1.</a> Unsolicited RAs</h1>
+<h1 id="rfc.section.2.1.1"><a href="#rfc.section.2.1.1">2.1.1.</a> Sending all PvDs in every RA (A1)</h1>
+<p id="rfc.section.2.1.1.p.1">In this case router sends in each RA every PvD it knows of.  </p>
+<p id="rfc.section.2.1.1.p.2">When some PvD is removed the router sends RA without the PvD included and in that way signalizes that PvD isn't available anymore. [TBD is this how RAs work].  </p>
+<p id="rfc.section.2.1.1.p.3">Pros of this case is simplicity of implementation. No change in RS needed.  </p>
+<p id="rfc.section.2.1.1.p.4">Cons of this case is that RA message size might grow and make the system inefficient. This can be particular problem in wireless networks where number of errors is high.  </p>
+<h1 id="rfc.section.2.1.2"><a href="#rfc.section.2.1.2">2.1.2.</a> Sending subset of PvDs in every RA (A2)</h1>
+<p id="rfc.section.2.1.2.p.1">In this case router sends in each RA only a certain subset of PvDs it knows of. The client (in some way) knows that there are additional PvDs so it can ask for them by sending RS message.  </p>
+<p id="rfc.section.2.1.2.p.2">Pros of this case are that the RA message size can be controlled and the client immediatelly knows of (at least) some PvDs.  </p>
+<p id="rfc.section.2.1.2.p.3">Cons of this case is that there should be a way for router to revoke some PvDs.  </p>
+<h1 id="rfc.section.2.1.3"><a href="#rfc.section.2.1.3">2.1.3.</a> Sending implicit PvD with a list of PvD IDs (A3)</h1>
+<p id="rfc.section.2.1.3.p.1">In this case router sends in each RA implicit PvD, if it has one and a list of all (or subset) of PvD IDs it has. Client needs to use RS with included PvD IDs to obtain configuration data for each PvD.  </p>
+<h1 id="rfc.section.2.1.4"><a href="#rfc.section.2.1.4">2.1.4.</a> Sending only implicit PvD (A4)</h1>
+<p id="rfc.section.2.1.4.p.1">In this case router sends in each RA only implicit PvD, if it has one.  It might somewhere (some flag) indicate the support for PvDs so that clients that receive RA know that they should request PvDs separately.  </p>
+<h1 id="rfc.section.2.2"><a href="#rfc.section.2.2">2.2.</a> Solicited RAs</h1>
+<p id="rfc.section.2.2.p.1">Note that in the case of hosts asking for specific PvDs routers that don't know for the given PvD ID will also receive requests! This is due to RS being sent to All_Routers multicast address, and not to a specific router.  </p>
+<h1 id="rfc.section.2.2.1"><a href="#rfc.section.2.2.1">2.2.1.</a> RS without any change (B1)</h1>
+<p id="rfc.section.2.2.1.p.1">When host sends RS it doesn't include any special options about PvD.  Router MUST send RA with all PvDs included as there is no way for client to request PvDs.  </p>
+<p id="rfc.section.2.2.1.p.2">This case fits well with the option A1 and option A2. In case of the option A2 it incurrs one additional round-trip time! </p>
+<h1 id="rfc.section.2.2.2"><a href="#rfc.section.2.2.2">2.2.2.</a> RS with indication of PvD support (B2)</h1>
+<p id="rfc.section.2.2.2.p.1">When host sends RS it includes an option that indicates host's support for PvDs. Router sends RA with all PvDs included. If the host doesn't include option to indicate PvD support, the router doesn't send any PvDs.  </p>
+<p id="rfc.section.2.2.2.p.2">When sending response the router has three options: </p>
+<p/>
+
+<ul>
+  <li>Only PvDs are included in the response, no implicit PvD.  </li>
+  <li>Everything router knows, implicit and explicit PvDs, sends in a single response.  </li>
+  <li>Router sends implicit PvD and a list of known PvD IDs.  </li>
+</ul>
+<p id="rfc.section.2.2.2.p.4">Depending on the chosen RS, this case fits with options A1, A2 and A3.  </p>
+<h1 id="rfc.section.2.2.3"><a href="#rfc.section.2.2.3">2.2.3.</a> RS with request for specific PvDs (B3)</h1>
+<p id="rfc.section.2.2.3.p.1">When host sends RS it can include one or more PvD IDs and in that way requests information about specific PvD. There could be a wildcard PvD ID that signals to router that every known PvD should be sent in the RA.  </p>
+<p id="rfc.section.2.2.3.p.2">When router sends PvDs in a separate RAs there are two options: </p>
+<p/>
+
+<ul>
+  <li>Only requested PvD(s) is sent in the RA. In case of wildcard PvD ID every known PvD ID to a router is sent.  </li>
+  <li>Only requested PvD(s) is sent in the RA. In case of wildcard PvD ID subset of known PvD IDs to a router are sent. Others must be requested explicitly.  </li>
+  <li>Along with requested PvD(s) included is also an implicit PvD.  </li>
+</ul>
+<p id="rfc.section.2.2.3.p.4">This case fits with options A1, A2 and A3.  </p>
+<p id="rfc.section.2.2.3.p.5">In case wildcard PvD ID is used option A4 is also possible.  </p>
+<h1 id="rfc.section.3"><a href="#rfc.section.3">3.</a> Implementation aspects</h1>
+<p id="rfc.section.3.p.1">While implementation aspects are system dependent, certain general characteristics could be discussed without going into specific implementations. The question is should this be touched by standardization process? Here we list some of the characteristics and possibilities, but leave the question of standardization open.  </p>
+<p id="rfc.section.3.p.2">In general, some kind of a control of PvD usage is necessary, i.e.  it is necessary to be able to control which configuration parameters applications will use (e.g. source IP addresses, DNS servers, routes). This can be achieved via two primary mechanisms: </p>
+<p/>
+
+<ul class="empty">
+  <li>By isolating applications and providing them with only a subset of PvDs which application should use. Note that the exact mechanism for isolation might vary, depending on the underlying system's abilities. In case of Linux operating system the isolation can be achieved using the following mechanisms: </li>
+  <li>
+    <ul class="empty">
+      <li>Network namespaces.  </li>
+      <li>Virtual router function available since Linux kernel 4.4.  </li>
+    </ul>
+  </li>
+  <li>Assigning all the configuration options at once and then using some mechanism to select certain subset based on the application or a thread.  </li>
+  <li>For example, in Fedora Linux this is partially done by NetworkManager which all the configuration options received via a single interface merges and assigns to the given interface. It is written "partially" because there is no mechanism now that would allow control on which configuration parameters are used by applications. Basically the mechanism exists in a form of IPv6 source/destination address selection but this mechanism doesn't take into account some advanced features of PvDs like accessibility to a certain services.  </li>
+</ul>
+<p id="rfc.section.3.p.4">In the end, at least that was so in the prototype implementations, the combination of the two approaches was used, i.e. there was isolation but within each isolated environment several PvDs were merged together.  </p>
+<p id="rfc.section.3.p.5">The questions that are relevant for the standardization are: </p>
+<p/>
+
+<ul class="empty">
+  <li/>
+</ul>
+<h1 id="rfc.section.4"><a href="#rfc.section.4">4.</a> Sequence of steps to configure PvD on a host</h1>
+<p id="rfc.section.4.p.1">When PvDs are received by a node there are certain questions that should be thought of </p>
+<h1 id="rfc.section.4.1"><a href="#rfc.section.4.1">4.1.</a> Implemented option</h1>
+<p id="rfc.section.4.1.p.1">TBD.  </p>
+<h1 id="rfc.section.4.2"><a href="#rfc.section.4.2">4.2.</a> Optimal case</h1>
+<p id="rfc.section.4.2.p.1">TBD.  </p>
+<h1 id="rfc.section.5"><a href="#rfc.section.5">5.</a> PvD characteristics description</h1>
+<p id="rfc.section.5.p.1">One very important question is how will clients know for what purposes the specific PvD is used for. In this section we list possible options to achieve that.  </p>
+<h1 id="rfc.section.6"><a href="#rfc.section.6">6.</a> Encapsulating PvDs in RAs</h1>
+<p/>
+<h1 id="rfc.section.7"><a href="#rfc.section.7">7.</a> <a href="#Acknowledgements" id="Acknowledgements">Acknowledgements</a></h1>
+<p id="rfc.section.7.p.1">TBW.  </p>
+<h1 id="rfc.section.8"><a href="#rfc.section.8">8.</a> <a href="#IANA" id="IANA">IANA Considerations</a></h1>
+<p id="rfc.section.8.p.1">This memo includes no request to IANA.</p>
+<p id="rfc.section.8.p.2">All drafts are required to have an IANA considerations section (see <a href="#I-D.narten-iana-considerations-rfc2434bis">the update of RFC 2434</a> <cite title="NONE">[I-D.narten-iana-considerations-rfc2434bis]</cite> for a guide). If the draft does not require IANA to do anything, the section contains an explicit statement that this is the case (as above). If there are no requirements for IANA, the section will be removed during conversion into an RFC by the RFC Editor.</p>
+<h1 id="rfc.section.9"><a href="#rfc.section.9">9.</a> <a href="#Security" id="Security">Security Considerations</a></h1>
+<p id="rfc.section.9.p.1">All drafts are required to have a security considerations section.  See <a href="#RFC3552">RFC 3552</a> <cite title="NONE">[RFC3552]</cite> for a guide.</p>
+<h1 id="rfc.references"><a href="#rfc.references">10.</a> References</h1>
+<h1 id="rfc.references.1"><a href="#rfc.references.1">10.1.</a> Normative References</h1>
+<table>
+  <tbody>
+    <tr>
+      <td class="reference">
+        <b id="RFC2119">[RFC2119]</b>
+      </td>
+      <td class="top"><a>Bradner, S.</a>, "<a href="http://tools.ietf.org/html/rfc2119">Key words for use in RFCs to Indicate Requirement Levels</a>", BCP 14, RFC 2119, DOI 10.17487/RFC2119, March 1997.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="RFC6418">[RFC6418]</b>
+      </td>
+      <td class="top"><a>Blanchet, M.</a> and <a>P. Seite</a>, "<a href="http://tools.ietf.org/html/rfc6418">Multiple Interfaces and Provisioning Domains Problem Statement</a>", RFC 6418, DOI 10.17487/RFC6418, November 2011.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="RFC6419">[RFC6419]</b>
+      </td>
+      <td class="top"><a>Wasserman, M.</a> and <a>P. Seite</a>, "<a href="http://tools.ietf.org/html/rfc6419">Current Practices for Multiple-Interface Hosts</a>", RFC 6419, DOI 10.17487/RFC6419, November 2011.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="RFC7556">[RFC7556]</b>
+      </td>
+      <td class="top"><a>Anipko, D.</a>, "<a href="http://tools.ietf.org/html/rfc7556">Multiple Provisioning Domain Architecture</a>", RFC 7556, DOI 10.17487/RFC7556, June 2015.</td>
+    </tr>
+  </tbody>
+</table>
+<h1 id="rfc.references.2"><a href="#rfc.references.2">10.2.</a> Informative References</h1>
+<table>
+  <tbody>
+    <tr>
+      <td class="reference">
+        <b id="I-D.ietf-mif-mpvd-dhcp-support">[I-D.ietf-mif-mpvd-dhcp-support]</b>
+      </td>
+      <td class="top"><a>Krishnan, S.</a>, <a>Korhonen, J.</a> and <a>S. Bhandari</a>, "<a href="http://tools.ietf.org/html/draft-ietf-mif-mpvd-dhcp-support-02">Support for multiple provisioning domains in DHCPv6</a>", Internet-Draft draft-ietf-mif-mpvd-dhcp-support-02, October 2015.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="I-D.ietf-mif-mpvd-ndp-support">[I-D.ietf-mif-mpvd-ndp-support]</b>
+      </td>
+      <td class="top"><a>Korhonen, J.</a>, <a>Krishnan, S.</a> and <a>S. Gundavelli</a>, "<a href="http://tools.ietf.org/html/draft-ietf-mif-mpvd-ndp-support-03">Support for multiple provisioning domains in IPv6 Neighbor Discovery Protocol</a>", Internet-Draft draft-ietf-mif-mpvd-ndp-support-03, February 2016.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="I-D.narten-iana-considerations-rfc2434bis">[I-D.narten-iana-considerations-rfc2434bis]</b>
+      </td>
+      <td class="top"><a>Narten, T.</a> and <a>H. Alvestrand</a>, "<a href="http://tools.ietf.org/html/draft-narten-iana-considerations-rfc2434bis-09">Guidelines for Writing an IANA Considerations Section in RFCs</a>", Internet-Draft draft-narten-iana-considerations-rfc2434bis-09, March 2008.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="RFC2629">[RFC2629]</b>
+      </td>
+      <td class="top"><a>Rose, M.</a>, "<a href="http://tools.ietf.org/html/rfc2629">Writing I-Ds and RFCs using XML</a>", RFC 2629, DOI 10.17487/RFC2629, June 1999.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="RFC3552">[RFC3552]</b>
+      </td>
+      <td class="top"><a>Rescorla, E.</a> and <a>B. Korver</a>, "<a href="http://tools.ietf.org/html/rfc3552">Guidelines for Writing RFC Text on Security Considerations</a>", BCP 72, RFC 3552, DOI 10.17487/RFC3552, July 2003.</td>
+    </tr>
+  </tbody>
+</table>
+<h1 id="rfc.authors">
+  <a href="#rfc.authors">Authors' Addresses</a>
+</h1>
+<div class="avoidbreak">
+  <address class="vcard">
+	<span class="vcardline">
+	  <span class="fn">Stjepan Gros</span> (editor)
+	  <span class="n hidden">
+		<span class="family-name">Gros</span>
+	  </span>
+	</span>
+	<span class="org vcardline">University of Zagreb</span>
+	<span class="adr">
+	  <span class="vcardline">Unska 3</span>
+
+	  <span class="vcardline">
+		<span class="locality">Zagreb</span>,  
+		<span class="region"></span>
+		<span class="code">10000</span>
+	  </span>
+	  <span class="country-name vcardline">HR</span>
+	</span>
+	<span class="vcardline">EMail: <a href="mailto:stjepan.gros@fer.hr">stjepan.gros@fer.hr</a></span>
+
+  </address>
+</div><div class="avoidbreak">
+  <address class="vcard">
+	<span class="vcardline">
+	  <span class="fn">Leonardo Jelenkovic</span> 
+	  <span class="n hidden">
+		<span class="family-name">Jelenkovic</span>
+	  </span>
+	</span>
+	<span class="org vcardline">University of Zagreb</span>
+	<span class="adr">
+	  <span class="vcardline">Unska 3</span>
+
+	  <span class="vcardline">
+		<span class="locality">Zagreb</span>,  
+		<span class="region"></span>
+		<span class="code">10000</span>
+	  </span>
+	  <span class="country-name vcardline">HR</span>
+	</span>
+	<span class="vcardline">EMail: <a href="mailto:leonardo.jelenkovic@fer.hr">leonardo.jelenkovic@fer.hr</a></span>
+
+  </address>
+</div><div class="avoidbreak">
+  <address class="vcard">
+	<span class="vcardline">
+	  <span class="fn">Dejan Skvorc</span> 
+	  <span class="n hidden">
+		<span class="family-name">Skvorc</span>
+	  </span>
+	</span>
+	<span class="org vcardline">University of Zagreb</span>
+	<span class="adr">
+	  <span class="vcardline">Unska 3</span>
+
+	  <span class="vcardline">
+		<span class="locality">Zagreb</span>,  
+		<span class="region"></span>
+		<span class="code">10000</span>
+	  </span>
+	  <span class="country-name vcardline">HR</span>
+	</span>
+	<span class="vcardline">EMail: <a href="mailto:dejan.skvorc@fer.hr">dejan.skvorc@fer.hr</a></span>
+
+  </address>
+</div>
+
+</body>
+</html>

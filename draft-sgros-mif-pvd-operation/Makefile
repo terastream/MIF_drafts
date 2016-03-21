@@ -1,10 +1,16 @@
 SRC := "draft"
 SRCXML := $(SRC).xml
 
-all:	text
+all:    text_and_html
 
-text:	$(SRCXML)
-	xml2rfc $(SRCXML) $(SRC).txt
+text_and_html:  $(SRCXML)
+	xml2rfc --html --text $(SRCXML)
+
+text:   $(SRCXML)
+	xml2rfc --text $(SRCXML)
+
+html:   $(SRCXML)
+	xml2rfc --html $(SRCXML)
 
 # Pull and update this repository.
 update:
