@@ -99,13 +99,13 @@ Table of Contents
      5.1.  Router Advertisements (RA) message extension  . . . . . .  33
      5.2.  Configuration file (radvd.conf) extension . . . . . . . .  35
      5.3.  Example Usage . . . . . . . . . . . . . . . . . . . . . .  37
-   6.  Acknowledgements  . . . . . . . . . . . . . . . . . . . . . .  40
-   7.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  40
-   8.  Security Considerations . . . . . . . . . . . . . . . . . . .  41
-   9.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  41
-     9.1.  Normative References  . . . . . . . . . . . . . . . . . .  41
-     9.2.  Informative References  . . . . . . . . . . . . . . . . .  41
-     9.3.  Implementation repositories . . . . . . . . . . . . . . .  42
+   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  40
+   7.  Security Considerations . . . . . . . . . . . . . . . . . . .  40
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  40
+     8.1.  Normative References  . . . . . . . . . . . . . . . . . .  40
+     8.2.  Informative References  . . . . . . . . . . . . . . . . .  41
+     8.3.  Implementation repositories . . . . . . . . . . . . . . .  42
+     8.4.  URIs  . . . . . . . . . . . . . . . . . . . . . . . . . .  42
 
 
 
@@ -114,12 +114,25 @@ Gros, et al.            Expires September 6, 2016               [Page 2]
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
-     9.4.  URIs  . . . . . . . . . . . . . . . . . . . . . . . . . .  42
    Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  42
 
 1.  Introduction
 
-   TBD.
+   This draft documents experiences gained while trying to implement
+   support for multiple provisioning domains in modern Linux desktop
+   distribution.  Two implementations were done.  One implementation was
+   written from scratch in Python programming language.  This
+   implementation and experiences gained are described in Section 3.
+   The other implementation was done in NetworkManager [NMSrc].
+   NetworkManager is used in all popular Linux distributions and is
+   mature component.  So, the goal of the prototype implementation was
+   to see how hard would it be to add PvD support to existing
+   applications.  Experiences gained are described in Section 4.  Before
+   implementations are described, in Section 2 some common elements to
+   both implementations are described.  Finally, for testing purposes it
+   was necessary to have server component.  For that purpose radvd
+   routing daemon was extended to send PvD container options.  This
+   modification is described in Section 5
 
 1.1.  Requirements Language
 
@@ -149,6 +162,14 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    most appropriate mechanism to control application use of provisioning
    domains.
 
+
+
+
+Gros, et al.            Expires September 6, 2016               [Page 3]
+
+Internet-Draft  An implementation of PvD support in Linux     March 2016
+
+
    Still, while network namespaces were found to be the most appropriate
    mechanism for separation of PvD-related network configurations, there
    is a big issue in that it is not possible to have the same PvD
@@ -158,17 +179,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    perspective this leads to proliferation of IP addresses and to issues
    with accountability.  It is even a bigger issue on IPv4 networks that
    have restricted number of PvD instances per each PvD.
-
-
-
-
-
-
-
-Gros, et al.            Expires September 6, 2016               [Page 3]
-
-Internet-Draft  An implementation of PvD support in Linux     March 2016
-
 
 3.  PvD-manager Implementation
 
@@ -198,16 +208,6 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
 
    Figure 1 presents an overview of a system and its components that use
    PvD-manager.
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2218,20 +2218,20 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
    Non-PvD-aware clients will use prefix information from implicit PvD
    only, skipping the content of two PVD_CO options.
 
-6.  Acknowledgements
-
-   TBW.
-
-7.  IANA Considerations
+6.  IANA Considerations
 
    This memo includes no request to IANA.
 
-   All drafts are required to have an IANA considerations section (see
-   the update of RFC 2434 [I-D.narten-iana-considerations-rfc2434bis]
-   for a guide).  If the draft does not require IANA to do anything, the
-   section contains an explicit statement that this is the case (as
-   above).  If there are no requirements for IANA, the section will be
-   removed during conversion into an RFC by the RFC Editor.
+7.  Security Considerations
+
+   Due to the complexity of the functionality itself, security was not
+   considered in the implementations.
+
+8.  References
+
+8.1.  Normative References
+
+
 
 
 
@@ -2241,15 +2241,6 @@ Gros, et al.            Expires September 6, 2016              [Page 40]
 
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
-
-8.  Security Considerations
-
-   All drafts are required to have a security considerations section.
-   See RFC 3552 [RFC3552] for a guide.
-
-9.  References
-
-9.1.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
@@ -2269,7 +2260,7 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
               Architecture", RFC 7556, DOI 10.17487/RFC7556, June 2015,
               <http://www.rfc-editor.org/info/rfc7556>.
 
-9.2.  Informative References
+8.2.  Informative References
 
    [dbus]     "D-Bus", March 2016,
               <https://www.freedesktop.org/wiki/Software/dbus/>.
@@ -2291,6 +2282,15 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
               Discovery Protocol", draft-ietf-mif-mpvd-ndp-support-03
               (work in progress), February 2016.
 
+   [I-D.narten-iana-considerations-rfc2434bis]
+              Narten, T. and H. Alvestrand, "Guidelines for Writing an
+              IANA Considerations Section in RFCs", draft-narten-iana-
+              considerations-rfc2434bis-09 (work in progress), March
+              2008.
+
+
+
+
 
 
 Gros, et al.            Expires September 6, 2016              [Page 41]
@@ -2298,16 +2298,17 @@ Gros, et al.            Expires September 6, 2016              [Page 41]
 Internet-Draft  An implementation of PvD support in Linux     March 2016
 
 
-   [I-D.narten-iana-considerations-rfc2434bis]
-              Narten, T. and H. Alvestrand, "Guidelines for Writing an
-              IANA Considerations Section in RFCs", draft-narten-iana-
-              considerations-rfc2434bis-09 (work in progress), March
-              2008.
-
    [iproute2]
               "iproute2", March 2016,
               <http://www.linuxfoundation.org/collaborate/workgroups/
               networking/iproute2>.
+
+   [NMSrc]    "NetworkManager project", March 2016,
+              <https://wiki.gnome.org/Projects/NetworkManager>.
+
+   [radvd-src]
+              "Linux IPv6 Router Advertisement Daemon (radvd)", March
+              2016, <http://www.litech.org/radvd/>.
 
    [RFC2629]  Rose, M., "Writing I-Ds and RFCs using XML", RFC 2629,
               DOI 10.17487/RFC2629, June 1999,
@@ -2318,7 +2319,7 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
               DOI 10.17487/RFC3552, July 2003,
               <http://www.rfc-editor.org/info/rfc3552>.
 
-9.3.  Implementation repositories
+8.3.  Implementation repositories
 
    [PvD-manager]
               Jelenkovic, L. and D. Skvorc, "PvD-manager repository",
@@ -2328,7 +2329,7 @@ Internet-Draft  An implementation of PvD support in Linux     March 2016
               (radvd)", February 2016, <https://github.com/dskvorc/mif-
               radvd>.
 
-9.4.  URIs
+8.4.  URIs
 
    [1] https://www.kernel.org/doc/Documentation/networking/vrf.txt
 
@@ -2341,7 +2342,6 @@ Authors' Addresses
    HR
 
    Email: stjepan.gros@fer.hr
-
 
 
 

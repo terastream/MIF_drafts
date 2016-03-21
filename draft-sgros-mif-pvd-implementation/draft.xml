@@ -137,7 +137,22 @@
     <section title="Introduction">
 
       <t>
-      TBD.
+      This draft documents experiences gained while trying to implement
+      support for multiple provisioning domains in modern Linux desktop
+      distribution. Two implementations were done. One implementation
+      was written from scratch in Python programming language. This
+      implementation and experiences gained are described in
+      <xref target="pvdmanager" />. The other implementation was done
+      in <xref target="NMSrc">NetworkManager</xref>. NetworkManager
+      is used in all popular Linux distributions and is mature component. So,
+      the goal of the prototype implementation was to see how hard would it
+      be to add PvD support to existing applications. Experiences gained are
+      described in <xref target="networkmanager" />. Before implementations
+      are described, in <xref target="common" /> some common elements to both
+      implementations are described. Finally, for testing purposes it was
+      necessary to have server component. For that purpose radvd routing
+      daemon was extended to send PvD container options. This modification
+      is described in <xref target="section-radvd" />
       </t>
 
       <section title="Requirements Language">
@@ -149,7 +164,7 @@
 
     </section>
 
-    <section title="Common implementation mechanisms">
+    <section anchor="common" title="Common implementation mechanisms">
 
       <t>
       In this section, we describe some common implementation concepts.
@@ -191,7 +206,7 @@
 
     </section>
 
-<section title="PvD-manager Implementation">
+<section anchor="pvdmanager" title="PvD-manager Implementation">
 <t>
 	PvD-manager is a client-side component for IPv6 network auto-configuration based
 	on multiple provisioning domains (PvDs), as described in
@@ -612,7 +627,7 @@ From R2:
 
 </section>
 
-    <section title="Implementing PvDs in NetworkManager">
+    <section anchor="networkmanager" title="Implementing PvDs in NetworkManager">
 
       <t>
       NetworkManager is a software component used in modern Linux
@@ -2379,29 +2394,21 @@ processing RAs in different network namespaces?
       </section>
     </section>
 
-    <section anchor="Acknowledgements" title="Acknowledgements">
-      <t>
-      TBW.
-      </t>
-    </section>
-
     <!-- Possibly a 'Contributors' section ... -->
 
     <section anchor="IANA" title="IANA Considerations">
       <t>This memo includes no request to IANA.</t>
-
-      <t>All drafts are required to have an IANA considerations section (see
-      <xref target="I-D.narten-iana-considerations-rfc2434bis">the update of
-      RFC 2434</xref> for a guide). If the draft does not require IANA to do
-      anything, the section contains an explicit statement that this is the
-      case (as above). If there are no requirements for IANA, the section will
-      be removed during conversion into an RFC by the RFC Editor.</t>
     </section>
 
     <section anchor="Security" title="Security Considerations">
-      <t>All drafts are required to have a security considerations section.
-      See <xref target="RFC3552">RFC 3552</xref> for a guide.</t>
+
+      <t>
+      Due to the complexity of the functionality itself, security
+      was not considered in the implementations.
+      </t>
+
     </section>
+
   </middle>
 
   <!--  *****BACK MATTER ***** -->
@@ -2453,7 +2460,7 @@ processing RAs in different network namespaces?
       <reference anchor="dbus" target="https://www.freedesktop.org/wiki/Software/dbus/">
         <front>
           <title>D-Bus</title>
-          <author fullname="freedesktop.org" />
+          <author fullname="Freedesktop Project" />
           <date month="March" year="2016" />
         </front>
       </reference>
@@ -2466,7 +2473,24 @@ processing RAs in different network namespaces?
         </front>
       </reference>
 
+      <reference anchor="NMSrc" target="https://wiki.gnome.org/Projects/NetworkManager">
+        <front>
+          <title>NetworkManager project</title>
+          <author fullname="The GNOME Foundation" />
+          <date month="March" year="2016" />
+        </front>
+      </reference>
+
+      <reference anchor="radvd-src" target="http://www.litech.org/radvd/">
+        <front>
+          <title>Linux IPv6 Router Advertisement Daemon (radvd)</title>
+          <author fullname="Reuben Hawkins" />
+          <date month="March" year="2016" />
+        </front>
+      </reference>
+
     </references>
+
     <references title="Implementation repositories">
 		<reference anchor="PvD-manager" target="https://github.com/l30nard0/mif">
 		<front>
