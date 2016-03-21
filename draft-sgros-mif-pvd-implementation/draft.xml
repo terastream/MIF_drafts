@@ -1579,41 +1579,76 @@ processing RAs in different network namespaces?
         <section title="Experimental PvD Implementation">
 
 <!--
-        <t>
-        The main objects that NetworkManager is based on are devices,
-        connections and properties.
-        </t>
+          <t>
+          The main objects that NetworkManager is based on are devices,
+          connections and properties.
+          </t>
 -->
 
-        <t>
-        The first implementation of PvDs was done using NMIP6Config as a
-        PvD container. Before describing the implementation we have to
-        state that the only mechanism currently able to carry PvDs is RA
-        messages. NMIP6Config objects are extended with PvD ID field. At
-        first, there was support for different types of PvD IDs and the
-        first implemented type was UUID stored in ASCII format. Later in
-        the development process PvD ID types were removed and the only
-        possible type is UUID. It seems that this doesn't make
-        implementations less flexible and in the same time substantially
-        reduces complexity.
-        </t>
+          <t>
+          The first implementation of PvDs was done using NMIP6Config as a
+          PvD container. Before describing the implementation we have to
+          state that the only mechanism currently able to carry explicit PvDs are RA
+          messages. For that reason NMIP4Config weren't changed.
+          NMIP6Config objects are extended with PvD ID field. At
+          first, there was support for different types of PvD IDs and the
+          first implemented type was UUID stored in ASCII format. Later in
+          the development process support for PvD ID types was removed and the only
+          possible type is UUID. It seems that this doesn't make
+          implementations less flexible and in the same time substantially
+          reduces complexity.
+          </t>
 
-        <t>
-        When RA is received, and after it is processed as usual, a new
-        implicit PvD is created from data in RA. If there are two or more
-        routers on the local network, each sending its own configuration
-        data, then a separate PvD is created for each RA. Also, in case
-        there are PVD container option in RA it is parsed and additional
-        PvD is created from that data.
-        </t>
+          <t>
+          When RA is received from routers that don't support PvDs, it is
+          first processed as usual, and then a new implicit PvD is created
+          from the data in the RA. The ID of the implicit PvD is calculated
+          by concatenating data unique to PvD (network prefix, network prefix
+          length, DNS servers, DNS search domains) and hashed using MD5. This
+          is then used as UUID of the given PvD.
+          Note that if there are two or more routers on the local network,
+          each sending its own configuration data, then PvD IDs will differ
+          and a separate PvD will be created for each RA.
+          </t>
 
-        <t>
-        This information is then handled to NMDevice object which merges
-        data from implicit PvDs (as it does in the unmodified version) but
-        now there is also a hash table with set of PvDs received on the
-        given interface. This information is then exposed through
-        NMActiveConnection object.
-        </t>
+          <t>
+          When PvD container option is present within the RA message it
+          is parsed as "normal" RA message would, but then it is only placed
+          in a list of available PvDs on a given interface. This configuration
+          is not merged with the implicit configuration in the root network
+          name space.
+          </t>
+
+          <t>
+          All PvDs obtained from RA are then handled to NMDevice object which
+          has old behavior to merge data from implicit PvDs so to make the
+          configuration available to host, but now there is also additional
+          processing of PvDs. A hash table with set of PvDs received on the
+          given interface is added to the device. PvDs are managed in this
+          hash table, i.e. added or removed according to the events received
+          on the network. Note that PvDs bound to device are only valid on a
+          given device, i.e. they can not be used on any other device that
+          doesn't have the same connectivity.
+          </t>
+
+          <t>
+          In order for the applications to be able to query received PvDs
+          they are exposed in two places. The first place they are exposed
+          on is via D-Bus on the device object itself (NMDevice). So, any
+          application can query a device to find out if there are PvDs
+          available. The same information is also exposed on NMActivateConnection
+          object, which basically acts as a proxy to NMDevice object that is
+          part of the NMActiveConnection object. When application queries for
+          available PvDs what it actually gets is a list of D-Bus paths to
+          objects with details.
+          </t>
+
+          <t>
+          Details about PvDs are available through NMIP6Config objects. When
+          a new PvD is created, an object of class NMIP6Config is created and
+          automatically exposed to D-Bus. By looking at the properties of
+          those objects, details about PvDs can be determined.
+          </t>
 
         </section>
 
@@ -1622,10 +1657,11 @@ processing RAs in different network namespaces?
       <section title="Experience Gained and Future Work">
 
         <t>
-        The current work is focused on design of appropriate API exposed
-        over D-Bus that would allow applications to activate and
-        deactivate specific PvDs. It is not yet finished, but two
-        principles emerged:
+        The current work is focused on design of appropriate API that will
+        be exposed over D-Bus to allow applications to activate and
+        deactivate specific PvDs. It is not yet finished because there is
+        no mapping between PvDs and current objects - like connections,
+        devices, settings. Yet, two principles emerged:
         </t>
 
         <t><list>
@@ -1645,7 +1681,17 @@ processing RAs in different network namespaces?
         </list></t>
 
         <t>
-        After this is resolved, there are at least few more things
+        Part of the API design is to determine the most appropriate
+        structure to keep information about PvDs. The current use of
+        NMIP6Config object isn't good for two reasons. First, it wasn't
+        designed for that purpose, and second, existing API methods
+        don't allow objects of type NMIP6Config to be passed as
+        arguments. In the next iteration the most probable candidate
+        for storing PvD information will be NMSettingsConnection object.
+        </t>
+
+        <t>
+        After API form is resolved, there are at least few more things
         that have to be sorted out before it can be considered the
         work to be finished:
         </t>
@@ -1677,40 +1723,381 @@ processing RAs in different network namespaces?
 
       </section>
 
-      <section title="Relationship to PvD Architecture">
+      <section title="Unresolved issues">
 
-<t>
-Requirements set forth by PvD architecture mean in practice that the only
-way to proceed on Linux is by using network namespaces.
-</t>
+        <t>
+        While working on PvD implementation in NetworkManager there were some
+        issues that came up and that were not resolved during the prototyping
+        implementation. They are listed in this section.
+        </t>
 
-<t>
-Certain aspects of the architecture either are already implemented or
-there are provisions to do so.
-</t>
+        <t>
+        Issues related to the content of PvD payload:
+        </t>
 
-<t>
-Define how to distinguish implicit PvDs.
-</t>
+        <t><list style="symbols">
 
-<t>
-Define the case with multiple IPv6 routers.
-</t>
+          <t>
+          It is important to know what information belongs to a PvD. Namely,
+          if there is PvD container option that holds all information belonging
+          to a specific PvD then it is clear that information contained in the
+          header of the RA message couldn't be included within container
+          options. Information such as gatway addres, hop limit, router lifetime
+          and timers, and flaggs M and O must be common to all content of the RA.
+          </t>
 
-<t>
+          <t>
+          PvD has to contain gateway address, one or more. The problem is that this
+          information isn't an option and thus can not be embedded within a
+          PvD container. So, all PvDs sent by some router will have the same gateway
+          address. Note that multiple routers can send RAs with the _same_ PvD in
+          it. In such cases gateway addresses are merged.
+          </t>
 
- In the simplest case, explicit PvDs will be scoped for configuration
-   related only to a specific interface.  However, there is no
-   requirement in this architecture for such a limitation.  Explicit
-   PvDs may include information related to more than one interface if
-   the node learns the presence of the same PvD on those interfaces and
-   the authentication of the PvD ID meets the level required by the node
-   policy (authentication of a PvD ID may be also required in scenarios
-   involving only one connected interface and/or PvD; for additional
-   discussion of PvD Trust, see Section 7).
+        </list></t>
 
-this complicates things a lot as there is currently no provisions for this!
-</t>
+        <t>
+        Issues related to the difference between PvD and PvD instance:
+        </t>
+
+        <t><list style="symbols">
+
+          <t>
+          In MIF WG documents the term "PvD" is used with two different meanings.
+          The first one is a concrete set of parameters bound to a specific
+          interface, most notably a specific IP address that should be used by host
+          for its interface. The second one is a more general and encompases a set
+          of PvD instances thus creating some kind of a PvD class. The characteristic
+          of PvD (as opposed to PvD instance) is that it contains parameters bound
+          to a local network, i.e. it has network prefix instead of a specific IP
+          address. Obviously there could be other parameteres besides IP addresses
+          that belong to PvD instance, but the analysis wasn't done as a part of
+          work that produced this draft. The distinction between PvD and PvD
+          instance is more visible in IPv6 than in IPv4 due to the way they are
+          configured on end hosts.
+          </t>
+
+        </list></t>
+
+        <section title="Identifying implicit PvDs">
+
+          <t>
+          In this section we discuss how PvD aware clients should identify
+          implicit PvDs they receive. "Implicit PvDs" are those that contain
+          no PvD related identification information like specific options
+          with identifiers, or container options, etc. In this class are all
+          legacy mechanisms, like DHCP, RA, etc.
+          </t>
+
+          <t>
+          The idea is to generate stable identifier independent of PvD
+          instance based on a set of configuration options that uniquely
+          identify a PvD. This would allow PvD aware applications to
+          be more uniform in a sense that they don't have any special
+          functionality (or it is minimized) for support of legacy
+          configurations. The requirements are also:
+          </t>
+
+          <t><list>
+
+            <t>
+            Two independent clients, or client and server, generate the
+            same PvD ID and in that way it is possible to do more specific
+            configurations based on PvD ID. A more specific configuration
+            might be, for example, what is a purpose of some specific PvD.
+            </t>
+
+            <t>
+            The process of generating PvD ID should allow clients to detect
+            connectivity changes, i.e. to know when they are connected to
+            another network, or when connectivity of the existing network
+            changed.
+            </t>
+
+            <t>
+            The process of generating PvD ID should be such that all PvD
+            aware nodes, receiving the same set of configuration parameters
+            (i.e. the same implicit PvD), would assign it the same PvD ID.
+            </t>
+
+          </list></t>
+
+          <t>
+          The following elements could comprise a set of parameters that
+          uniquely identify PvD:
+          </t>
+
+          <t><list style="symbols">
+
+            <t>
+            All network prefix(es) used on a local network.
+            </t>
+
+            <t>
+            Routes specific to a gateway that sent RA.
+            </t>
+
+            <t>
+            Addresses of DNS servers.
+            </t>
+
+            <t>
+            Domain names served by DNS servers.
+            </t>
+
+          </list></t>
+
+          <t>
+          Time values are not take in into account while determining to which
+          PvD given configuration parameters belong to. Also, the following
+          parameters are for consideration should they or not be taken into
+          account when determining PvD identities:
+          </t>
+
+          <t><list style="symbols">
+
+            <t>
+            hop_limit
+            </t>
+
+            <t>
+	    mtu
+            </t>
+
+            <t>
+	    dhcp_level
+            </t>
+  
+            <t>
+	    Different lifetimes.
+            </t>
+
+          </list></t>
+
+          <t>
+          Note that in some cases there could be the same set of network(!)
+          configuration parameters used on multipe different networks.
+          This is the case with IPv4 private space in which IP network mask,
+          gateway and DNS server combination doesn't have to be unique!
+          Take for example residential networks, or different companies.
+          This might pose a problem for determining ID of implicit PvD by
+          calculating hash of network layer parameters. On IPv6 this isn't
+          a problem due to the use of private addresses and/or MAC addresses
+          when generating specific addresses.
+          </t>
+
+          <t>
+          To generate PvD ID from the set of configuration parameters some 
+          form of hashing over precisely defined set of configuration options
+          might be used. UUID algorithm might be used as well.
+          </t>
+
+        </section>
+
+        <section title="Managing PvD lifecycle">
+
+          <t>
+	  PvDi lifecycle consists of the step when they are created and
+          communicated to the nodes, used within the nodes, and finally
+	  removed when the node loses connectivity. Here are some the
+          questions that should be answered by defining node behavior:
+          </t>
+
+          <t><list style="symbols">
+
+            <t>
+            PvDs are received through an interface. And very likely they
+            should be bound to this interface only, or more generally to
+            the network on which they were received. This also means that
+            when the interface stops working, PvDs received on the same
+            interface should disappear too. The question is what should
+            happen if the "main" implicit PvD dissapers? Should all related
+            PvDs be removed too?
+            </t>
+
+            <t>
+            Should applications know about relationship between PvDs and
+            interfaces, or should they only know for PvDs while some more
+            advanced applications would know for the connection? In other
+            words, when an PvD aware application requests information about
+            available PvDs, should it also receive information on which
+            interfaces those PvDs were received? Should returned PvDs be
+            grouped by interfaces they were received? Or should they be
+            returned flat, without any information about interfaces they are
+            bound to?
+            </t>
+
+            <t>
+            When a node first time learns about PvD, how long is this
+            information retained? Until connection ends, or forever with
+            some indication that PvD isn't active? Note that this doesn't
+            mean that PvDs is used after connection ends, it only means
+            that applications can find out about PvDs even though they are
+            not active. Presently, this is how information about APs in
+            wireless networks behave, i.e. they are all remembered. But
+            the behavior in wired networks is different.
+            </t>
+
+            <t>
+            Suppose that on a single link there is implicit PvD and at least
+            one explicit link. What should node do when implicit PvD
+            disappears but explicit is stil present? Could this happen?
+            </t>
+
+            <t>
+            If we take approach of sending PvD configuration options via
+            RA messages, how can router remove a specific PvD? The only
+            possibility at the moment is to send all the options with lifetime
+            set to zero. The problem is that not all options support lifetime
+            so it is not possible to only remove a specific explicit PvD.
+            </t>
+
+            <t>
+            There might be a cases when two PvDs have to be merged. For example,
+            if they have to be used on a same interface. Should there be a set
+            of rules that govern the merger? NetworkManager currently merges all
+            configurations in root network namespace. Note that there are two
+            different mergers. One that merges interface specific configuration
+            data and the another one that merges node specific configuration data
+            (e.g. DNS addresses, default routers).
+            </t>
+
+            <t>
+            From the management perspective, there is a possibility of
+            proliferation of IPv6 addresses used by a node. Should this be
+            bound, or controlled in some way?
+            </t>
+
+            <t>
+            How to handle multiple DHCP servers on a local network (or accessible
+            via DHCP relay) serving different PvDs? Currently, a node selects
+            one DHCP server and ignores others. So, using current mechanisms
+            there is no way a node might configure multiple PvDs from multiple
+            DHCP servers.
+            </t>
+
+          </list></t>
+
+	  <t>
+          Some questions are not specific for PvDs but are also valid for NDP
+          in general so they might already have an answer. Still, for completness
+          and until we figure out answers, here they are:
+	  </t>
+
+          <t><list>
+
+            <t>
+            There are multiple lifetimes in RA message, and in PvD in particular.
+            What if one element of PvD times out, others not? Should only this
+            particular element be removed, or the all PvD? For example, what if
+            prefix disappears and other elements don't?
+            </t>
+
+            <t>
+            What if in one RA message there is certain set of parameters, but then
+            in the following message some parameters from the first message are
+            missing? How should implementation react in that case?
+            </t>
+
+          </list></t>
+
+        </section>
+
+      </section>
+
+      <section title="Comments on MPvD Architecture RFC document">
+
+        <t>
+        In this section few comments about <xref target="RFC7556">MPvD
+        architecture RFC</xref> are given in light of the implementation
+        of PvDs described earlier.
+        </t>
+
+        <t>
+        MPvD Architecture document distinguishes between implicit and
+        explicit PvDs. Additional distinction is necessary between PvD
+        and PvD instance.
+        </t>
+
+        <t>
+        In section 2.2 the architecture document talks about treating
+        information received on different interfaces as being different
+        PvDs. It might happen that different implicit PvDs are received
+        on a single interface. Thus, this should be better defined, i.e.
+        more formal process on how to distinguish PvDs and PvD instances.
+        </t>
+
+        <t>
+        Section 2.3 introduces possibility that one PvD is present on
+        multiple interfaces. This is something that complicates implementation
+        due to the way routing in the operating systems works. Additionally,
+        there are different bridging solutions on L2 that might solve this
+        case much easier.
+        </t>
+
+        <t>
+        PvD identifiers introduced in section 2.4. In this implementation
+        only UUID is used, and to present user with something meaningful
+        other mechanisms will be used. For example, connection description
+        might be obtained via HTTP to appropriate URL, or query to DNS.
+        </t>
+
+        <t>
+        Section 2.5 talks about relation between IPv6 and IPv4 addresses.
+        From the implementation perspective it seems easier to keep those
+        separated and treat them as a separate PvDs. One reason is that
+        those two are usually configured separately. Thus, to keep things
+        simple, it is best to keep them separated.
+        </t>
+
+        <t>
+        Section 3.2 talks about security PvDs. This is a very complex
+        topic and it wasn't touched in this implementation.
+        </t>
+
+        <t>
+        In Section 4 three examples are given of multiple PvDs present.
+        Of those, only VPN case (example 4.2) was implemented fully due to
+        being the most straightforward.
+        </t>
+
+        <t> 
+        The example 4.1 is interesting due
+        to the fact that it already works. In other words, when NetworkManager
+        receives configurations via wired and wireless network by manipulating
+        default route it gives a precedence to wired connection. Because both,
+        i.e. wired and wireless networks, are from the same provider that
+        means DNS servers are very likely the same and so this case is, in some
+        way, already solved. Additionally, it is very questionable if the
+        network namespace separation would be useful in this case. Namely,
+        those two network are alternatives and if separated, and one application
+        is in wired network that at some point disappears, it is expected that
+        wireless in that case could be used. But, because of the separation
+        it can not. Note that there is assumption here that wired should be
+        used first by application. In case it would not, then network separation
+        is necessary.
+        </t>
+
+        <t>
+        Example 4.3 is valid for a gateway and devices behind gateway are not
+        aware of different provisioning domains. Yet, a host might also find itself
+        in the given situation and so this example is also interesting for nodes.
+        Yet, this functionality is planned for future work.
+        </t>
+
+        <t>
+        <xref target="RFC7556">RFC7556</xref> sets requirement of not merging
+        different PvDs in section 5. This, when applied to Linux OS, means that
+        network namespaces are the only way to go. There are other options,
+        but they all seem to be a lot more complex.
+        </t>
+
+        <t>
+        As a todo item it would be beneficial to write a draft that
+        defines node's behavior in presence of multiple PvDs. This can
+        be done in terms of multiple virtual hosts on a single host (which are
+        basically network namespaces).
+        </t>
 
       </section>
 

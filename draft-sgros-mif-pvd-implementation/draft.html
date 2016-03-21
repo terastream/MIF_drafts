@@ -387,7 +387,7 @@
 <link href="#rfc.section.3.6.1" rel="Chapter" title="3.6.1 Linux namespaces"/>
 <link href="#rfc.section.4" rel="Chapter" title="4 Implementing PvDs in NetworkManager"/>
 <link href="#rfc.section.4.1" rel="Chapter" title="4.1 NetworkManager's Current Behavior"/>
-<link href="#rfc.section.4.2" rel="Chapter" title="4.2 The architecture and components"/>
+<link href="#rfc.section.4.2" rel="Chapter" title="4.2 The Architecture and Components"/>
 <link href="#rfc.section.4.3" rel="Chapter" title="4.3 Existing NetworkManager API"/>
 <link href="#rfc.section.4.4" rel="Chapter" title="4.4 Options to support network namespaces"/>
 <link href="#rfc.section.4.5" rel="Chapter" title="4.5 Options to support PvDs in NetworkManager"/>
@@ -399,7 +399,10 @@
 <link href="#rfc.section.4.6.1" rel="Chapter" title="4.6.1 Network namespace management"/>
 <link href="#rfc.section.4.6.2" rel="Chapter" title="4.6.2 Experimental PvD Implementation"/>
 <link href="#rfc.section.4.7" rel="Chapter" title="4.7 Experience Gained and Future Work"/>
-<link href="#rfc.section.4.8" rel="Chapter" title="4.8 Relationship to PvD Architecture"/>
+<link href="#rfc.section.4.8" rel="Chapter" title="4.8 Unresolved issues"/>
+<link href="#rfc.section.4.8.1" rel="Chapter" title="4.8.1 Identifying implicit PvDs"/>
+<link href="#rfc.section.4.8.2" rel="Chapter" title="4.8.2 Managing PvD lifecycle"/>
+<link href="#rfc.section.4.9" rel="Chapter" title="4.9 Comments on MPvD Architecture RFC document"/>
 <link href="#rfc.section.5" rel="Chapter" title="5 Server component"/>
 <link href="#rfc.section.5.1" rel="Chapter" title="5.1 Router Advertisements (RA) message extension"/>
 <link href="#rfc.section.5.2" rel="Chapter" title="5.2 Configuration file (radvd.conf) extension"/>
@@ -493,7 +496,7 @@
 <ul><li>3.6.1.   <a href="#rfc.section.3.6.1">Linux namespaces</a></li>
 </ul></ul><li>4.   <a href="#rfc.section.4">Implementing PvDs in NetworkManager</a></li>
 <ul><li>4.1.   <a href="#rfc.section.4.1">NetworkManager's Current Behavior</a></li>
-<li>4.2.   <a href="#rfc.section.4.2">The architecture and components</a></li>
+<li>4.2.   <a href="#rfc.section.4.2">The Architecture and Components</a></li>
 <li>4.3.   <a href="#rfc.section.4.3">Existing NetworkManager API</a></li>
 <li>4.4.   <a href="#rfc.section.4.4">Options to support network namespaces</a></li>
 <li>4.5.   <a href="#rfc.section.4.5">Options to support PvDs in NetworkManager</a></li>
@@ -505,7 +508,10 @@
 <ul><li>4.6.1.   <a href="#rfc.section.4.6.1">Network namespace management</a></li>
 <li>4.6.2.   <a href="#rfc.section.4.6.2">Experimental PvD Implementation</a></li>
 </ul><li>4.7.   <a href="#rfc.section.4.7">Experience Gained and Future Work</a></li>
-<li>4.8.   <a href="#rfc.section.4.8">Relationship to PvD Architecture</a></li>
+<li>4.8.   <a href="#rfc.section.4.8">Unresolved issues</a></li>
+<ul><li>4.8.1.   <a href="#rfc.section.4.8.1">Identifying implicit PvDs</a></li>
+<li>4.8.2.   <a href="#rfc.section.4.8.2">Managing PvD lifecycle</a></li>
+</ul><li>4.9.   <a href="#rfc.section.4.9">Comments on MPvD Architecture RFC document</a></li>
 </ul><li>5.   <a href="#rfc.section.5">Server component</a></li>
 <ul><li>5.1.   <a href="#rfc.section.5.1">Router Advertisements (RA) message extension</a></li>
 <li>5.2.   <a href="#rfc.section.5.2">Configuration file (radvd.conf) extension</a></li>
@@ -682,14 +688,14 @@ From R2:
 </dl>
 <p id="rfc.section.4.1.p.5">It isn't hard to see that NetworkManager mixes multiple PvD instances that leads to very complex situations in which it is hard to control which PvD instance will be used by applications.  There are standard mechanisms, like source address selection, but no DNS selection, nor destination address selection.  Some control is possible by default route installation. Namely, it is possible to instruct NetworkManager not to install default route for specific connections (like for example VPN) even though default route was received as a part of the configuration.  NetworkManager uses this mechanism to enforce some simple policies, like to give a preference to wired over wireless connection.  </p>
 <p id="rfc.section.4.1.p.6">Applications don't have any control of network configurations they use and there is no standard way for applications to find out what specific connection offer in terms of quality of service, cost and reachability.  </p>
-<h1 id="rfc.section.4.2"><a href="#rfc.section.4.2">4.2.</a> The architecture and components</h1>
-<p id="rfc.section.4.2.p.1">We can describe NetworkManager in terms of static architecture and runtime behavior. The static architecture is reflected by the source code organization and libraries and external programs used.  The purpose of this draft is only to present the core of the NetworkManager, but take into account that there are some additional components which we'll not cover.  </p>
+<h1 id="rfc.section.4.2"><a href="#rfc.section.4.2">4.2.</a> The Architecture and Components</h1>
+<p id="rfc.section.4.2.p.1">We can describe NetworkManager in terms of static architecture and runtime behavior. The static architecture is reflected by the source code organization and libraries and external programs used.  The purpose of this draft is only to present the core of the NetworkManager, but keep in mind that there are other components which we'll not cover.  </p>
 <p id="rfc.section.4.2.p.2">When the source code archive of NetworkManager is unpacked, there is a src/ subdirectory of top-level directory. This is the main part of the NetworkManager and there you'll find the following subdirectories and files: </p>
 <p/>
 
 <dl>
   <dt>devices/</dt>
-  <dd style="margin-left: 6"><br/> Objects that allow management of networking devices. By management it is meant tracking status of devices, network configuration data applied to devices, but also creating and removing devices of a certain types.  </dd>
+  <dd style="margin-left: 6"><br/> Objects that allow management of networking devices. By management it is meant tracking status of devices, network configuration data applied to devices, but also creating and removing devices of a certain types. The main class/object defined here is NMDevice.  </dd>
   <dt>dhcp-manager/</dt>
   <dd style="margin-left: 6"><br/> DHCP manager (object that controls DHCP clients) and an object/class for each DHCP client supported. NetworkManager supports several DHCP clients: internal, ISC's dhclient, and systemd. By default, ISC's client is used.  </dd>
   <dt>platform/</dt>
@@ -697,7 +703,7 @@ From R2:
   <dt>rdisc/</dt>
   <dd style="margin-left: 6"><br/> Objects that are used to send/receive RA/RS messages. There is a platform independent object and platform dependent objects. Platform dependent objects do real receive/send events. NetworkManager uses libndp library here to send, receive and parse RA and RS messages.  </dd>
   <dt>settings/</dt>
-  <dd style="margin-left: 6"><br/> In this subdirectory are objects that represent connections (NMSettingsConnection) and a singleton object that manages all connection objects.  </dd>
+  <dd style="margin-left: 6"><br/> In this subdirectory are objects that represent connections (NMSettingsConnection) and a singleton object NMSettings that manages all connection objects.  </dd>
   <dt>vpn-manager/</dt>
   <dd style="margin-left: 6"><br/> Object to manage VPN connections and NMVPNConnection object that is instantiated for each VPN established. Handling of external daemons is placed in separate software not part of the NetworkManager core archive.  </dd>
   <dt>nm-manager</dt>
@@ -845,18 +851,22 @@ From R2:
 <p id="rfc.section.4.6.1.p.12">Basically, the implementation is such that when device appears in root network namespace it is taken from there (using TakeDevice method, but called directly instead via D-Bus).  When device appears in the target network namespace network parameters are assigned to the interface. This was tested with OpenVPN type of VPN.  </p>
 <p id="rfc.section.4.6.1.p.13">The implementation has two problems. First, the case of VPN connections that don't create virtual devices but instead just modify packet processing rules in the Linux kernel (i.e. XFRM).  Secondly, hostname and name resolution parameters aren't assigned because the infrastructure is lacking in that respect.  </p>
 <h1 id="rfc.section.4.6.2"><a href="#rfc.section.4.6.2">4.6.2.</a> Experimental PvD Implementation</h1>
-<p id="rfc.section.4.6.2.p.1">The first implementation of PvDs was done using NMIP6Config as a PvD container. Before describing the implementation we have to state that the only mechanism currently able to carry PvDs is RA messages. NMIP6Config objects are extended with PvD ID field. At first, there was support for different types of PvD IDs and the first implemented type was UUID stored in ASCII format. Later in the development process PvD ID types were removed and the only possible type is UUID. It seems that this doesn't make implementations less flexible and in the same time substantially reduces complexity.  </p>
-<p id="rfc.section.4.6.2.p.2">When RA is received, and after it is processed as usual, a new implicit PvD is created from data in RA. If there are two or more routers on the local network, each sending its own configuration data, then a separate PvD is created for each RA. Also, in case there are PVD container option in RA it is parsed and additional PvD is created from that data.  </p>
-<p id="rfc.section.4.6.2.p.3">This information is then handled to NMDevice object which merges data from implicit PvDs (as it does in the unmodified version) but now there is also a hash table with set of PvDs received on the given interface. This information is then exposed through NMActiveConnection object.  </p>
+<p id="rfc.section.4.6.2.p.1">The first implementation of PvDs was done using NMIP6Config as a PvD container. Before describing the implementation we have to state that the only mechanism currently able to carry explicit PvDs are RA messages. For that reason NMIP4Config weren't changed.  NMIP6Config objects are extended with PvD ID field. At first, there was support for different types of PvD IDs and the first implemented type was UUID stored in ASCII format. Later in the development process support for PvD ID types was removed and the only possible type is UUID. It seems that this doesn't make implementations less flexible and in the same time substantially reduces complexity.  </p>
+<p id="rfc.section.4.6.2.p.2">When RA is received from routers that don't support PvDs, it is first processed as usual, and then a new implicit PvD is created from the data in the RA. The ID of the implicit PvD is calculated by concatenating data unique to PvD (network prefix, network prefix length, DNS servers, DNS search domains) and hashed using MD5. This is then used as UUID of the given PvD.  Note that if there are two or more routers on the local network, each sending its own configuration data, then PvD IDs will differ and a separate PvD will be created for each RA.  </p>
+<p id="rfc.section.4.6.2.p.3">When PvD container option is present within the RA message it is parsed as "normal" RA message would, but then it is only placed in a list of available PvDs on a given interface. This configuration is not merged with the implicit configuration in the root network name space.  </p>
+<p id="rfc.section.4.6.2.p.4">All PvDs obtained from RA are then handled to NMDevice object which has old behavior to merge data from implicit PvDs so to make the configuration available to host, but now there is also additional processing of PvDs. A hash table with set of PvDs received on the given interface is added to the device. PvDs are managed in this hash table, i.e. added or removed according to the events received on the network. Note that PvDs bound to device are only valid on a given device, i.e. they can not be used on any other device that doesn't have the same connectivity.  </p>
+<p id="rfc.section.4.6.2.p.5">In order for the applications to be able to query received PvDs they are exposed in two places. The first place they are exposed on is via D-Bus on the device object itself (NMDevice). So, any application can query a device to find out if there are PvDs available. The same information is also exposed on NMActivateConnection object, which basically acts as a proxy to NMDevice object that is part of the NMActiveConnection object. When application queries for available PvDs what it actually gets is a list of D-Bus paths to objects with details.  </p>
+<p id="rfc.section.4.6.2.p.6">Details about PvDs are available through NMIP6Config objects. When a new PvD is created, an object of class NMIP6Config is created and automatically exposed to D-Bus. By looking at the properties of those objects, details about PvDs can be determined.  </p>
 <h1 id="rfc.section.4.7"><a href="#rfc.section.4.7">4.7.</a> Experience Gained and Future Work</h1>
-<p id="rfc.section.4.7.p.1">The current work is focused on design of appropriate API exposed over D-Bus that would allow applications to activate and deactivate specific PvDs. It is not yet finished, but two principles emerged: </p>
+<p id="rfc.section.4.7.p.1">The current work is focused on design of appropriate API that will be exposed over D-Bus to allow applications to activate and deactivate specific PvDs. It is not yet finished because there is no mapping between PvDs and current objects - like connections, devices, settings. Yet, two principles emerged: </p>
 <p/>
 
 <ul class="empty">
   <li>The changes to the existing API should be minimal. In other words we try to avoid introducing parallel API to the existing one.  </li>
   <li>Applications should be isolated from specifics of a network configuration, i.e. they shouldn't know or care which devices contain specific PvDs or how they should be composed, etc.  </li>
 </ul>
-<p id="rfc.section.4.7.p.3">After this is resolved, there are at least few more things that have to be sorted out before it can be considered the work to be finished: </p>
+<p id="rfc.section.4.7.p.3">Part of the API design is to determine the most appropriate structure to keep information about PvDs. The current use of NMIP6Config object isn't good for two reasons. First, it wasn't designed for that purpose, and second, existing API methods don't allow objects of type NMIP6Config to be passed as arguments. In the next iteration the most probable candidate for storing PvD information will be NMSettingsConnection object.  </p>
+<p id="rfc.section.4.7.p.4">After API form is resolved, there are at least few more things that have to be sorted out before it can be considered the work to be finished: </p>
 <p/>
 
 <ul class="empty">
@@ -864,12 +874,85 @@ From R2:
   <li>Host name management has to be properly handled. Currently, this is ignored by PvD handling code within NetworkManager.  Still, this want be easy because it might happen that two PvDs have to be available to application each with different hostname.  </li>
   <li>DNS resolution is also currently lacking, specially considering there are existing RFCs that allow domains to be specified for each DNS server and the new drafts that appeared recently in MIF WG.  </li>
 </ul>
-<h1 id="rfc.section.4.8"><a href="#rfc.section.4.8">4.8.</a> Relationship to PvD Architecture</h1>
-<p id="rfc.section.4.8.p.1">Requirements set forth by PvD architecture mean in practice that the only way to proceed on Linux is by using network namespaces.  </p>
-<p id="rfc.section.4.8.p.2">Certain aspects of the architecture either are already implemented or there are provisions to do so.  </p>
-<p id="rfc.section.4.8.p.3">Define how to distinguish implicit PvDs.  </p>
-<p id="rfc.section.4.8.p.4">Define the case with multiple IPv6 routers.  </p>
-<p id="rfc.section.4.8.p.5">In the simplest case, explicit PvDs will be scoped for configuration related only to a specific interface.  However, there is no requirement in this architecture for such a limitation.  Explicit PvDs may include information related to more than one interface if the node learns the presence of the same PvD on those interfaces and the authentication of the PvD ID meets the level required by the node policy (authentication of a PvD ID may be also required in scenarios involving only one connected interface and/or PvD; for additional discussion of PvD Trust, see Section 7).  this complicates things a lot as there is currently no provisions for this! </p>
+<h1 id="rfc.section.4.8"><a href="#rfc.section.4.8">4.8.</a> Unresolved issues</h1>
+<p id="rfc.section.4.8.p.1">While working on PvD implementation in NetworkManager there were some issues that came up and that were not resolved during the prototyping implementation. They are listed in this section.  </p>
+<p id="rfc.section.4.8.p.2">Issues related to the content of PvD payload: </p>
+<p/>
+
+<ul>
+  <li>It is important to know what information belongs to a PvD. Namely, if there is PvD container option that holds all information belonging to a specific PvD then it is clear that information contained in the header of the RA message couldn't be included within container options. Information such as gatway addres, hop limit, router lifetime and timers, and flaggs M and O must be common to all content of the RA.  </li>
+  <li>PvD has to contain gateway address, one or more. The problem is that this information isn't an option and thus can not be embedded within a PvD container. So, all PvDs sent by some router will have the same gateway address. Note that multiple routers can send RAs with the _same_ PvD in it. In such cases gateway addresses are merged.  </li>
+</ul>
+<p id="rfc.section.4.8.p.4">Issues related to the difference between PvD and PvD instance: </p>
+<p/>
+
+<ul>
+  <li>In MIF WG documents the term "PvD" is used with two different meanings.  The first one is a concrete set of parameters bound to a specific interface, most notably a specific IP address that should be used by host for its interface. The second one is a more general and encompases a set of PvD instances thus creating some kind of a PvD class. The characteristic of PvD (as opposed to PvD instance) is that it contains parameters bound to a local network, i.e. it has network prefix instead of a specific IP address. Obviously there could be other parameteres besides IP addresses that belong to PvD instance, but the analysis wasn't done as a part of work that produced this draft. The distinction between PvD and PvD instance is more visible in IPv6 than in IPv4 due to the way they are configured on end hosts.  </li>
+</ul>
+<h1 id="rfc.section.4.8.1"><a href="#rfc.section.4.8.1">4.8.1.</a> Identifying implicit PvDs</h1>
+<p id="rfc.section.4.8.1.p.1">In this section we discuss how PvD aware clients should identify implicit PvDs they receive. "Implicit PvDs" are those that contain no PvD related identification information like specific options with identifiers, or container options, etc. In this class are all legacy mechanisms, like DHCP, RA, etc.  </p>
+<p id="rfc.section.4.8.1.p.2">The idea is to generate stable identifier independent of PvD instance based on a set of configuration options that uniquely identify a PvD. This would allow PvD aware applications to be more uniform in a sense that they don't have any special functionality (or it is minimized) for support of legacy configurations. The requirements are also: </p>
+<p/>
+
+<ul class="empty">
+  <li>Two independent clients, or client and server, generate the same PvD ID and in that way it is possible to do more specific configurations based on PvD ID. A more specific configuration might be, for example, what is a purpose of some specific PvD.  </li>
+  <li>The process of generating PvD ID should allow clients to detect connectivity changes, i.e. to know when they are connected to another network, or when connectivity of the existing network changed.  </li>
+  <li>The process of generating PvD ID should be such that all PvD aware nodes, receiving the same set of configuration parameters (i.e. the same implicit PvD), would assign it the same PvD ID.  </li>
+</ul>
+<p id="rfc.section.4.8.1.p.4">The following elements could comprise a set of parameters that uniquely identify PvD: </p>
+<p/>
+
+<ul>
+  <li>All network prefix(es) used on a local network.  </li>
+  <li>Routes specific to a gateway that sent RA.  </li>
+  <li>Addresses of DNS servers.  </li>
+  <li>Domain names served by DNS servers.  </li>
+</ul>
+<p id="rfc.section.4.8.1.p.6">Time values are not take in into account while determining to which PvD given configuration parameters belong to. Also, the following parameters are for consideration should they or not be taken into account when determining PvD identities: </p>
+<p/>
+
+<ul>
+  <li>hop_limit </li>
+  <li>mtu </li>
+  <li>dhcp_level </li>
+  <li>Different lifetimes.  </li>
+</ul>
+<p id="rfc.section.4.8.1.p.8">Note that in some cases there could be the same set of network(!) configuration parameters used on multipe different networks.  This is the case with IPv4 private space in which IP network mask, gateway and DNS server combination doesn't have to be unique! Take for example residential networks, or different companies.  This might pose a problem for determining ID of implicit PvD by calculating hash of network layer parameters. On IPv6 this isn't a problem due to the use of private addresses and/or MAC addresses when generating specific addresses.  </p>
+<p id="rfc.section.4.8.1.p.9">To generate PvD ID from the set of configuration parameters some form of hashing over precisely defined set of configuration options might be used. UUID algorithm might be used as well.  </p>
+<h1 id="rfc.section.4.8.2"><a href="#rfc.section.4.8.2">4.8.2.</a> Managing PvD lifecycle</h1>
+<p id="rfc.section.4.8.2.p.1">PvDi lifecycle consists of the step when they are created and communicated to the nodes, used within the nodes, and finally removed when the node loses connectivity. Here are some the questions that should be answered by defining node behavior: </p>
+<p/>
+
+<ul>
+  <li>PvDs are received through an interface. And very likely they should be bound to this interface only, or more generally to the network on which they were received. This also means that when the interface stops working, PvDs received on the same interface should disappear too. The question is what should happen if the "main" implicit PvD dissapers? Should all related PvDs be removed too? </li>
+  <li>Should applications know about relationship between PvDs and interfaces, or should they only know for PvDs while some more advanced applications would know for the connection? In other words, when an PvD aware application requests information about available PvDs, should it also receive information on which interfaces those PvDs were received? Should returned PvDs be grouped by interfaces they were received? Or should they be returned flat, without any information about interfaces they are bound to? </li>
+  <li>When a node first time learns about PvD, how long is this information retained? Until connection ends, or forever with some indication that PvD isn't active? Note that this doesn't mean that PvDs is used after connection ends, it only means that applications can find out about PvDs even though they are not active. Presently, this is how information about APs in wireless networks behave, i.e. they are all remembered. But the behavior in wired networks is different.  </li>
+  <li>Suppose that on a single link there is implicit PvD and at least one explicit link. What should node do when implicit PvD disappears but explicit is stil present? Could this happen? </li>
+  <li>If we take approach of sending PvD configuration options via RA messages, how can router remove a specific PvD? The only possibility at the moment is to send all the options with lifetime set to zero. The problem is that not all options support lifetime so it is not possible to only remove a specific explicit PvD.  </li>
+  <li>There might be a cases when two PvDs have to be merged. For example, if they have to be used on a same interface. Should there be a set of rules that govern the merger? NetworkManager currently merges all configurations in root network namespace. Note that there are two different mergers. One that merges interface specific configuration data and the another one that merges node specific configuration data (e.g. DNS addresses, default routers).  </li>
+  <li>From the management perspective, there is a possibility of proliferation of IPv6 addresses used by a node. Should this be bound, or controlled in some way? </li>
+  <li>How to handle multiple DHCP servers on a local network (or accessible via DHCP relay) serving different PvDs? Currently, a node selects one DHCP server and ignores others. So, using current mechanisms there is no way a node might configure multiple PvDs from multiple DHCP servers.  </li>
+</ul>
+<p id="rfc.section.4.8.2.p.3">Some questions are not specific for PvDs but are also valid for NDP in general so they might already have an answer. Still, for completness and until we figure out answers, here they are: </p>
+<p/>
+
+<ul class="empty">
+  <li>There are multiple lifetimes in RA message, and in PvD in particular.  What if one element of PvD times out, others not? Should only this particular element be removed, or the all PvD? For example, what if prefix disappears and other elements don't? </li>
+  <li>What if in one RA message there is certain set of parameters, but then in the following message some parameters from the first message are missing? How should implementation react in that case? </li>
+</ul>
+<h1 id="rfc.section.4.9"><a href="#rfc.section.4.9">4.9.</a> Comments on MPvD Architecture RFC document</h1>
+<p id="rfc.section.4.9.p.1">In this section few comments about <a href="#RFC7556">MPvD architecture RFC</a> <cite title="NONE">[RFC7556]</cite> are given in light of the implementation of PvDs described earlier.  </p>
+<p id="rfc.section.4.9.p.2">MPvD Architecture document distinguishes between implicit and explicit PvDs. Additional distinction is necessary between PvD and PvD instance.  </p>
+<p id="rfc.section.4.9.p.3">In section 2.2 the architecture document talks about treating information received on different interfaces as being different PvDs. It might happen that different implicit PvDs are received on a single interface. Thus, this should be better defined, i.e.  more formal process on how to distinguish PvDs and PvD instances.  </p>
+<p id="rfc.section.4.9.p.4">Section 2.3 introduces possibility that one PvD is present on multiple interfaces. This is something that complicates implementation due to the way routing in the operating systems works. Additionally, there are different bridging solutions on L2 that might solve this case much easier.  </p>
+<p id="rfc.section.4.9.p.5">PvD identifiers introduced in section 2.4. In this implementation only UUID is used, and to present user with something meaningful other mechanisms will be used. For example, connection description might be obtained via HTTP to appropriate URL, or query to DNS.  </p>
+<p id="rfc.section.4.9.p.6">Section 2.5 talks about relation between IPv6 and IPv4 addresses.  From the implementation perspective it seems easier to keep those separated and treat them as a separate PvDs. One reason is that those two are usually configured separately. Thus, to keep things simple, it is best to keep them separated.  </p>
+<p id="rfc.section.4.9.p.7">Section 3.2 talks about security PvDs. This is a very complex topic and it wasn't touched in this implementation.  </p>
+<p id="rfc.section.4.9.p.8">In Section 4 three examples are given of multiple PvDs present.  Of those, only VPN case (example 4.2) was implemented fully due to being the most straightforward.  </p>
+<p id="rfc.section.4.9.p.9">The example 4.1 is interesting due to the fact that it already works. In other words, when NetworkManager receives configurations via wired and wireless network by manipulating default route it gives a precedence to wired connection. Because both, i.e. wired and wireless networks, are from the same provider that means DNS servers are very likely the same and so this case is, in some way, already solved. Additionally, it is very questionable if the network namespace separation would be useful in this case. Namely, those two network are alternatives and if separated, and one application is in wired network that at some point disappears, it is expected that wireless in that case could be used. But, because of the separation it can not. Note that there is assumption here that wired should be used first by application. In case it would not, then network separation is necessary.  </p>
+<p id="rfc.section.4.9.p.10">Example 4.3 is valid for a gateway and devices behind gateway are not aware of different provisioning domains. Yet, a host might also find itself in the given situation and so this example is also interesting for nodes.  Yet, this functionality is planned for future work.  </p>
+<p><a href="#RFC7556">RFC7556</a> <cite title="NONE">[RFC7556]</cite> sets requirement of not merging different PvDs in section 5. This, when applied to Linux OS, means that network namespaces are the only way to go. There are other options, but they all seem to be a lot more complex.  </p>
+<p id="rfc.section.4.9.p.12">As a todo item it would be beneficial to write a draft that defines node's behavior in presence of multiple PvDs. This can be done in terms of multiple virtual hosts on a single host (which are basically network namespaces).  </p>
 <h1 id="rfc.section.5"><a href="#rfc.section.5">5.</a> <a href="#section-radvd" id="section-radvd">Server component</a></h1>
 <p id="rfc.section.5.p.1">Server side component of the MIF architecture implementation described in this document is Router Advertisements Daemon (radvd). radvd is used to announce PvD-related network configuration data to the clients using NDP protocol. PvD-aware radvd extension alows clients to autoconfigure their network parameters related to multiple PvDs simultaneously. For the purpose of MIF architecture implementation, existing structure of Router Advertisements (RA) message is extended with new NDP option that encapsulates PvD-related network configuration information as suboptions. To configure what PvD-related network configuration information to include into RA messages, radvd configuration file is extended with new configuration block where PvD-related network configuration information are specified.  </p>
 <p id="rfc.section.5.p.2">Proposed extension of the Router Advertisement Daemon is backward compatible with the non-PvD-aware version of radvd. This means that old clients will continue to work normally, except that they will not be able to configure PvD-related network information on their network interfaces. New option introduced into the RA message is silently ignored by non-PvD-aware clients if they are implemented correctly.  </p>
