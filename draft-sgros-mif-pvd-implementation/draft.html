@@ -384,7 +384,6 @@
 <link href="#rfc.section.3.4" rel="Chapter" title="3.4 Implementation Details"/>
 <link href="#rfc.section.3.5" rel="Chapter" title="3.5 Test Scenarios"/>
 <link href="#rfc.section.3.6" rel="Chapter" title="3.6 Experiences gained"/>
-<link href="#rfc.section.3.6.1" rel="Chapter" title="3.6.1 Linux namespaces"/>
 <link href="#rfc.section.4" rel="Chapter" title="4 Implementing PvDs in NetworkManager"/>
 <link href="#rfc.section.4.1" rel="Chapter" title="4.1 NetworkManager's Current Behavior"/>
 <link href="#rfc.section.4.2" rel="Chapter" title="4.2 The Architecture and Components"/>
@@ -492,8 +491,7 @@
 <li>3.4.   <a href="#rfc.section.3.4">Implementation Details</a></li>
 <li>3.5.   <a href="#rfc.section.3.5">Test Scenarios</a></li>
 <li>3.6.   <a href="#rfc.section.3.6">Experiences gained</a></li>
-<ul><li>3.6.1.   <a href="#rfc.section.3.6.1">Linux namespaces</a></li>
-</ul></ul><li>4.   <a href="#rfc.section.4">Implementing PvDs in NetworkManager</a></li>
+</ul><li>4.   <a href="#rfc.section.4">Implementing PvDs in NetworkManager</a></li>
 <ul><li>4.1.   <a href="#rfc.section.4.1">NetworkManager's Current Behavior</a></li>
 <li>4.2.   <a href="#rfc.section.4.2">The Architecture and Components</a></li>
 <li>4.3.   <a href="#rfc.section.4.3">Existing NetworkManager API</a></li>
@@ -527,7 +525,7 @@
   </ul>
 
   <h1 id="rfc.section.1"><a href="#rfc.section.1">1.</a> Introduction</h1>
-<p id="rfc.section.1.p.1">This draft documents experiences gained while trying to implement support for multiple provisioning domains in modern Linux desktop distribution. Two implementations were done. One implementation was written from scratch in Python programming language. This implementation and experiences gained are described in <a href="#pvdmanager">Section 3</a>. The other implementation was done in <a href="#NMSrc">NetworkManager</a> <cite title="NONE">[NMSrc]</cite>. NetworkManager is used in all popular Linux distributions and is mature component. So, the goal of the prototype implementation was to see how hard would it be to add PvD support to existing applications. Experiences gained are described in <a href="#networkmanager">Section 4</a>. Before implementations are described, in <a href="#common">Section 2</a> some common elements to both implementations are described. Finally, for testing purposes it was necessary to have server component. For that purpose radvd routing daemon was extended to send PvD container options. This modification is described in <a href="#section-radvd">Section 5</a> </p>
+<p id="rfc.section.1.p.1">This draft documents experiences gained while trying to implement support for multiple provisioning domains in modern Linux desktop distribution. Two implementations were done. One implementation was written from scratch in Python programming language. This implementation and experiences gained are described in <a href="#pvdmanager">Section 3</a>. The other implementation was done in <a href="#NMSrc">NetworkManager</a> <cite title="NONE">[NMSrc]</cite>. NetworkManager is used in all popular Linux distributions and is mature component. So, the goal of the prototype implementation was to see how hard would it be to add PvD support to existing applications. Experiences gained are described in <a href="#networkmanager">Section 4</a>. Before implementations are described, in <a href="#common">Section 2</a> some common elements to both implementations are described. Finally, for testing purposes it was necessary to have server component. For that purpose <a href="#radvd-src">radvd routing daemon</a> <cite title="NONE">[radvd-src]</cite> was extended to send PvD container options. This modification is described in <a href="#section-radvd">Section 5</a> </p>
 <h1 id="rfc.section.1.1"><a href="#rfc.section.1.1">1.1.</a> Requirements Language</h1>
 <p id="rfc.section.1.1.p.1">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in <a href="#RFC2119">RFC 2119</a> <cite title="NONE">[RFC2119]</cite>.</p>
 <h1 id="rfc.section.2"><a href="#rfc.section.2">2.</a> <a href="#common" id="common">Common implementation mechanisms</a></h1>
@@ -543,24 +541,24 @@
 <div id="rfc.figure.1"/>
 <div id="PvD-manager-architecture"/>
 <pre>
-+---------------------------------------------------+  +-------------+
-| +-----------------------------------------------+ |  |   +-------+ |
-| | PvD-manager                                   | |  | +-+ radvd | |
-| | +-----------+   +-----------+   +-----------+ | |  | | +-------+ |
-| | | pvdserver +-&gt;-+   pvdman  +-&lt;-+ ndpclient | | |  | |           |
-| | +-----+-----+   +-------+---+   +-----+-----+ | |  | | +-------+ |
-| +-------|-----------------|-------------|-------+ |  | +-+ httpd | |
-|         |d-bus      create|configure    |RA/RS    |  | | +-------+ |
-| get_pvds|           delete|             |HTTP     |  | |           |
-| +-------|-------+    +----+---------+   |         |  | |           |
-| | +-----+-----+ |join|   network    |  -+---------+--+-+--        -+-
-| | |  MIF API  +------+  namespace   |             |  |             |
-| | +-----------+ |    |  operations  |             |  |             |
-| |               |    +--------------+             |  |             |
-| |   PvD aware   |                                 |  |             |
-| |  application  |                                 |  |             |
-| +---------------+                    Client (PC)  |  |     Router  |
-+---------------------------------------------------+  +-------------+
++---------------------------------------------------+ +------------+
+| +-----------------------------------------------+ | |   +-------+|
+| | PvD-manager                                   | | | +-+ radvd ||
+| | +-----------+   +-----------+   +-----------+ | | | | +-------+|
+| | | pvdserver +-&gt;-+   pvdman  +-&lt;-+ ndpclient | | | | |          |
+| | +-----+-----+   +-------+---+   +-----+-----+ | | | | +-------+|
+| +-------|-----------------|-------------|-------+ | | +-+ httpd ||
+|         |d-bus      create|configure    |RA/RS    | | | +-------+|
+| get_pvds|           delete|             |HTTP     | | |          |
+| +-------|-------+    +----+---------+   |         | | |          |
+| | +-----+-----+ |join|   network    |  -+---------+-+-+--       -+-
+| | |  MIF API  +------+  namespace   |             | |            |
+| | +-----------+ |    |  operations  |             | |            |
+| |               |    +--------------+             | |            |
+| |   PvD aware   |                                 | |            |
+| |  application  |                                 | |            |
+| +---------------+                    Client (PC)  | |     Router |
++---------------------------------------------------+ +------------+
 </pre>
 <p class="figure">Figure 1: PvD prototype architecture overview</p>
 <p id="rfc.section.3.1.p.3">PvD-manager receives network configurations through Router Advertisement (RA) messages. Modified version of PvD aware <a href="#radvd">radvd daemon</a> <cite title="NONE">[radvd]</cite> is used. The modifications made to radvd to support MIF architecture is described	in <a href="#section-radvd">Section 5</a>.  Each RA may contain one or more network configurations which are classified either as explicit or implicit PvDs. Explicit PvD is a set of coherent NDP options explicitly labeled with a unique PvD identifier and nested within a special NDP option called PVD container, as described in <a href="#I-D.ietf-mif-mpvd-ndp-support">draft-ietf-mif-mpvd-ndp-support-02</a> <cite title="NONE">[I-D.ietf-mif-mpvd-ndp-support]</cite>. Multiple explicit PvDs may appear in a single RA, each within a different PvD container option, as long as they are labeled with different PvD identifiers. Implicit PvD is just another name for top-level NDP options placed outside the PvD container option, as in regular PvD unaware router advertisements. Since implicit PvDs are not labeled with PvD identifier, PvD-manager automatically generates an identifier for internal use and configures the implicit PvD on the host in the same way as if it was the explicit one. Only one implicit PvD is allowed per RA.  In current prototype, UUID is used as a PvD identifier.  </p>
@@ -638,17 +636,23 @@ From R2:
 <div id="rfc.figure.3"/>
 <div id="demo-system"/>
 <pre>
-              fd01::1/64+----+                                   +----+
-        2001:db8:1::1/64|    |2001:db8:10::1/32 2001:db8:10::2/32|    |
-           +----------o-+ R1 +-o-------------------------------o-+ S1 |
-+------+   |            |    |        :     [VMnet3]             |    |
-|      |   |            +----+        :                          +----+
-|Client+-o-+ [VMnet2]                 : (for some tests this is linked)
-|      |   |            +----+        :                          +----+
-+------+   |            |    |        :     [VMnet4]             |    |
-           +----------o-+ R2 +-o-------------------------------o-+ S2 |
-        2001:db8:2::1/64|    |2001:db8:20::1/32 2001:db8:20::2/32|    |
-              fd02::1/64+----+                                   +----+
+
+             fd01::1/64 +----+                                +----+
+       2001:db8:1::1/64 |    |        2001:db8:10::1/32       |    |
+                        |    |        2001:db8:10::2/32       |    |
+           +----------o-+ R1 +-o----------------------------o-+ S1 |
++------+   |            |    |      :       [VMnet3]          |    |
+|      |   |            |    |      :                         |    |
+|      |   |            +----+      : (for some tests         +----+
+|Client+-o-+ [VMnet2]               :  this link is 
+|      |   |            +----+      :  established)           +----+
+|      |   |            |    |      :                         |    |
++------+   |            |    |      :       [VMnet4]          |    |
+           +----------o-+ R2 +-o----------------------------o-+ S2 |
+                        |    |        2001:db8:20::1/32       |    |
+       2001:db8:2::1/64 |    |        2001:db8:20::2/32       |    |
+             fd02::1/64 +----+                                +----+
+
 </pre>
 <p class="figure">Figure 3: Network configuration used in test scenarios</p>
 <p id="rfc.section.3.5.p.2">All server hosts, including routers have configured HTTP and DNS servers providing many possibilities for testing. Routers, in RAs advertise prefixes as shown on <a href="#demo-system">Figure 3</a>. Local addresses are used in explicit PvDs (simulating some specific service), while public in implicit.  </p>
@@ -658,13 +662,13 @@ From R2:
 <p id="rfc.section.3.5.p.6">In some scenarios both S1 and S2 were connected to both routers R1 and R2.  In this scenarios better PvD could be chosen for connecting with servers, if properties for PvDs are provided. Also, when a connection fails (when some PvD loses connectivity), the application can reset connections, refresh PvD availability from PvD-manager, and select another PvD among the active ones.  </p>
 <p id="rfc.section.3.5.p.7">More details for described scenarios (and some other) are provided in <a href="#PvD-manager">demonstration test cases </a> <cite title="NONE">[PvD-manager]</cite>.  </p>
 <h1 id="rfc.section.3.6"><a href="#rfc.section.3.6">3.6.</a> Experiences gained</h1>
-<h1 id="rfc.section.3.6.1"><a href="#rfc.section.3.6.1">3.6.1.</a> Linux namespaces</h1>
-<p id="rfc.section.3.6.1.p.1">Using Linux namespaces still seems best option for PvD realization despite its drawbacks. Its isolation and ease of use from PvD-manager and client application perspective can hardly be outmatched with other solutions.  Besides already mentioned need for separate IP address per namespace, there are several more issues with namespaces.  </p>
-<p id="rfc.section.3.6.1.p.2">Managing namespaces (creation, deletion, modification) requires root privileges (as expected). However, even switching an application from one namespace to another is possible only if application has root privileges.  This currently limits this namespace approach exclusively to applications run by root. For lifting this limitation, changes in Linux kernel and namespace handling is required. Some sort of permission system should also be applied to namespaces (e.g. similar to permissions on files and system objects).  </p>
-<p id="rfc.section.3.6.1.p.3">Switching namespace from within the application with setns() system call doesn't update DNS related configuration as expected. When an application is started with commands "ip netns exec &lt;namespace-name&gt; &lt;application&gt; [arguments]", DNS configuration is updated (/etc/resolf.conf is the one from /etc/netns/&lt;namespace-name&gt;/). However, setns() doesn't replicate that behavior, and that manipulations should be done separately (mounting certain directories/files).  </p>
-<p id="rfc.section.3.6.1.p.4">When a namespace is created, a virtual device is created that is linked with physical device (and it gets assigned its own MAC address). However, if particular physical device does not allow to be linked with virtual one (like VPN), then either physical device must be moved to certain PvD or some sort of bridge has to be created and devices attached to that bridge that can be moved to the namespace.  Sometimes, it's better to move physical device to particular namespace (PvD) and allow only some applications to use it (e.g. like VPN).  </p>
-<p id="rfc.section.3.6.1.p.5">Managing namespace: creating, deleting, adding device to it, adding ip addresses and routes are operations performed within PvD-manager and they aren't instant.  Maybe that is expected and "normal" since such operations aren't to be performed frequently (only when something in network changes). However, when testing frequent changes in PvDs (routers were connected and disconnected) significant delay in PvD aware application was detected. Sometimes PvD-manager's API server module (that is responsible for client communication) become unresponsive for at least several seconds. The reason could be a suboptimal implementation of PvD-manager, but also a side effect of inherently slow process of network reconfiguration required by PvD-manager that should be applied in the Linux kernel.  </p>
-<p id="rfc.section.3.6.1.p.6">Recently added feature to the Linux kernel (January, 2016), named <a href="https://www.kernel.org/doc/Documentation/networking/vrf.txt">Virtual Routing and Forwarding (VRF)</a>, seems as a promising alternative to network namespaces. However, a more thorough research is needed to draw valid conclusions.  </p>
+<p id="rfc.section.3.6.p.1">Since main implementation mechanism used to separate different PvD configuration from each other are Linux namespaces, in this section we discuss its suitability as a solution to the given problem. Linux namespaces were selected as main implementation mechanism during the design phase, based on their theoretical properties and limited hands-on experience from our previous projects. Comments that follow reflect our opinions gained during the implementation and testing phase.  </p>
+<p id="rfc.section.3.6.p.2">Using Linux namespaces still seems best option for PvD realization despite its drawbacks. Its isolation and ease of use from PvD-manager and client application perspective can hardly be outmatched with other solutions.  Besides already mentioned need for separate IP address per namespace, there are several more issues with namespaces.  </p>
+<p id="rfc.section.3.6.p.3">Managing namespaces (creation, deletion, modification) requires root privileges (as expected). However, even switching an application from one namespace to another is possible only if application has root privileges.  This currently limits this namespace approach exclusively to applications run by root. For lifting this limitation, changes in Linux kernel and namespace handling is required. Some sort of permission system should also be applied to namespaces (e.g. similar to permissions on files and system objects).  </p>
+<p id="rfc.section.3.6.p.4">Switching namespace from within the application with setns() system call doesn't update DNS related configuration as expected. When an application is started with commands "ip netns exec &lt;namespace-name&gt; &lt;application&gt; [arguments]", DNS configuration is updated (/etc/resolf.conf is the one from /etc/netns/&lt;namespace-name&gt;/). However, setns() doesn't replicate that behavior, and that manipulations should be done separately (mounting certain directories/files).  </p>
+<p id="rfc.section.3.6.p.5">When a namespace is created, a virtual device is created that is linked with physical device (and it gets assigned its own MAC address). However, if particular physical device does not allow to be linked with virtual one (like VPN), then either physical device must be moved to certain PvD or some sort of bridge has to be created and devices attached to that bridge that can be moved to the namespace.  Sometimes, it's better to move physical device to particular namespace (PvD) and allow only some applications to use it (e.g. like VPN).  </p>
+<p id="rfc.section.3.6.p.6">Managing namespace: creating, deleting, adding device to it, adding ip addresses and routes are operations performed within PvD-manager and they aren't instant.  Maybe that is expected and "normal" since such operations aren't to be performed frequently (only when something in network changes). However, when testing frequent changes in PvDs (routers were connected and disconnected) significant delay in PvD aware application was detected. Sometimes PvD-manager's API server module (that is responsible for client communication) become unresponsive for at least several seconds. The reason could be a suboptimal implementation of PvD-manager, but also a side effect of inherently slow process of network reconfiguration required by PvD-manager that should be applied in the Linux kernel.  </p>
+<p id="rfc.section.3.6.p.7">Recently added feature to the Linux kernel (January, 2016), named <a href="https://www.kernel.org/doc/Documentation/networking/vrf.txt">Virtual Routing and Forwarding (VRF)</a>, seems as a promising alternative to network namespaces. However, a more thorough research is needed to draw valid conclusions.  </p>
 <h1 id="rfc.section.4"><a href="#rfc.section.4">4.</a> <a href="#networkmanager" id="networkmanager">Implementing PvDs in NetworkManager</a></h1>
 <p id="rfc.section.4.p.1">NetworkManager is a software component used in modern Linux distributions to control network connections. It runs as a daemon tracking and reacting to the network related events, either those coming from the network (like, for example, Router Advertisements) or those from the local system (e.g. user adding new network device, like USB modem). Furthermore, it exposes certain methods and properties over D-Bus interface so that it can be controlled by different clients, the most prominent being network manager applet and nmcli command line tool.  </p>
 <p id="rfc.section.4.p.2">Due to its importance in the modern Linux distributions it was valuable experience to try to implement PvDs within it. Yet, NetworkManager is a very complex piece of a software that wasn't designed with PvDs in mind so it wasn't straightforward task to try to implement them and there were some difficulties that had to be dealt with. In the following text we'll first describe how NetworkManager behaves now in general and with respect to multiple PvDs, then we'll describe one approach on how to add support for multiple PvDs.  </p>
@@ -822,7 +826,8 @@ From R2:
   <li>For backwards compatibility root network namespace is left as is and is handled by NetworkManager as before, i.e.  it contains all configurations received merged into one.  </li>
   <li>NetworkManager doesn't touch network namespaces created by other applications, like for example different virtualization solutions.  </li>
 </ul>
-<p id="rfc.section.4.6.p.4">First step towards PvD implementation in NetworkManager was to add support for network namespaces. When network namespaces was implemented, PvD support was added. So, in the following text we first describe how network namespaces were added and then how PvDs were implemented.  </p>
+<p id="rfc.section.4.6.p.4">The NetworkManager sources that are described by this draft are available on <a href="#nmpvdsrc">GitHub repository</a> <cite title="NONE">[nmpvdsrc]</cite>.  Additionally, NetworkManager uses libndp library to parse and create RA and RS messages. This library was also modified as a part of this project to support <a href="#I-D.ietf-mif-mpvd-ndp-support">PvD CO option</a> <cite title="NONE">[I-D.ietf-mif-mpvd-ndp-support]</cite>. The modified libndp code can also be found on <a href="#libndp">GitHub</a> <cite title="NONE">[libndp]</cite>.  </p>
+<p id="rfc.section.4.6.p.5">First step towards PvD implementation in NetworkManager was to add support for network namespaces. When network namespaces was implemented, PvD support was added. So, in the following text we first describe how network namespaces were added and then how PvDs were implemented.  </p>
 <h1 id="rfc.section.4.6.1"><a href="#rfc.section.4.6.1">4.6.1.</a> Network namespace management</h1>
 <p id="rfc.section.4.6.1.p.1">This section documents a process to implement support for network namespaces in the NetworkManager. When network namespaces are available for use then NetworkManager can manage different network namespaces and connections within them. Applications then can be started in certain namespaces in which only specific connectivity is available. This allows control of what applications can use.  </p>
 <p id="rfc.section.4.6.1.p.2">The best use case for network namespaces is VPN connection (PvD instance) isolation and it was implemented as an example of how the network namespace implementation within NetworkManager can be used. When VPN connection is activated it is isolated within a special network namespace where the only connectivity is via VPN connection. Then, only specific applications are started within this network namespace and those applications will be able to access VPN resources while all the other applications, that are in different network namespaces, will not see VPN connection and thus will not be able to use them.  </p>
@@ -1191,12 +1196,6 @@ From R2:
     </tr>
     <tr>
       <td class="reference">
-        <b id="RFC6419">[RFC6419]</b>
-      </td>
-      <td class="top"><a>Wasserman, M.</a> and <a>P. Seite</a>, "<a href="http://tools.ietf.org/html/rfc6419">Current Practices for Multiple-Interface Hosts</a>", RFC 6419, DOI 10.17487/RFC6419, November 2011.</td>
-    </tr>
-    <tr>
-      <td class="reference">
         <b id="RFC7556">[RFC7556]</b>
       </td>
       <td class="top"><a>Anipko, D.</a>, "<a href="http://tools.ietf.org/html/rfc7556">Multiple Provisioning Domain Architecture</a>", RFC 7556, DOI 10.17487/RFC7556, June 2015.</td>
@@ -1209,12 +1208,6 @@ From R2:
     <tr><td class="reference"><b id="dbus">[dbus]</b></td><td class="top"><a href="https://www.freedesktop.org/wiki/Software/dbus/">D-Bus</a>", March 2016.</td>, "</tr>
     <tr>
       <td class="reference">
-        <b id="I-D.ietf-mif-mpvd-dhcp-support">[I-D.ietf-mif-mpvd-dhcp-support]</b>
-      </td>
-      <td class="top"><a>Krishnan, S.</a>, <a>Korhonen, J.</a> and <a>S. Bhandari</a>, "<a href="http://tools.ietf.org/html/draft-ietf-mif-mpvd-dhcp-support-02">Support for multiple provisioning domains in DHCPv6</a>", Internet-Draft draft-ietf-mif-mpvd-dhcp-support-02, October 2015.</td>
-    </tr>
-    <tr>
-      <td class="reference">
         <b id="I-D.ietf-mif-mpvd-id">[I-D.ietf-mif-mpvd-id]</b>
       </td>
       <td class="top"><a>Krishnan, S.</a>, <a>Korhonen, J.</a>, <a>Bhandari, S.</a> and <a>S. Gundavelli</a>, <a href="http://tools.ietf.org/html/draft-ietf-mif-mpvd-id-02">Identification of provisioning domains</a>", Internet-Draft draft-ietf-mif-mpvd-id-02, October 2015.</td>
@@ -1225,27 +1218,9 @@ From R2:
       </td>
       <td class="top"><a>Korhonen, J.</a>, <a>Krishnan, S.</a> and <a>S. Gundavelli</a>, "<a href="http://tools.ietf.org/html/draft-ietf-mif-mpvd-ndp-support-03">Support for multiple provisioning domains in IPv6 Neighbor Discovery Protocol</a>", Internet-Draft draft-ietf-mif-mpvd-ndp-support-03, February 2016.</td>
     </tr>
-    <tr>
-      <td class="reference">
-        <b id="I-D.narten-iana-considerations-rfc2434bis">[I-D.narten-iana-considerations-rfc2434bis]</b>
-      </td>
-      <td class="top"><a>Narten, T.</a> and <a>H. Alvestrand</a>, "<a href="http://tools.ietf.org/html/draft-narten-iana-considerations-rfc2434bis-09">Guidelines for Writing an IANA Considerations Section in RFCs</a>", Internet-Draft draft-narten-iana-considerations-rfc2434bis-09, March 2008.</td>
-    </tr>
     <tr><td class="reference"><b id="iproute2">[iproute2]</b></td><td class="top"><a href="http://www.linuxfoundation.org/collaborate/workgroups/networking/iproute2">iproute2</a>", March 2016.</td>, "</tr>
     <tr><td class="reference"><b id="NMSrc">[NMSrc]</b></td><td class="top"><a href="https://wiki.gnome.org/Projects/NetworkManager">NetworkManager project</a>", March 2016.</td>, "</tr>
     <tr><td class="reference"><b id="radvd-src">[radvd-src]</b></td><td class="top"><a href="http://www.litech.org/radvd/">Linux IPv6 Router Advertisement Daemon (radvd)</a>", March 2016.</td>, "</tr>
-    <tr>
-      <td class="reference">
-        <b id="RFC2629">[RFC2629]</b>
-      </td>
-      <td class="top"><a>Rose, M.</a>, "<a href="http://tools.ietf.org/html/rfc2629">Writing I-Ds and RFCs using XML</a>", RFC 2629, DOI 10.17487/RFC2629, June 1999.</td>
-    </tr>
-    <tr>
-      <td class="reference">
-        <b id="RFC3552">[RFC3552]</b>
-      </td>
-      <td class="top"><a>Rescorla, E.</a> and <a>B. Korver</a>, "<a href="http://tools.ietf.org/html/rfc3552">Guidelines for Writing RFC Text on Security Considerations</a>", BCP 72, RFC 3552, DOI 10.17487/RFC3552, July 2003.</td>
-    </tr>
   </tbody>
 </table>
 <h1 id="rfc.references.3"><a href="#rfc.references.3">8.3.</a> Implementation repositories</h1>
@@ -1253,15 +1228,27 @@ From R2:
   <tbody>
     <tr>
       <td class="reference">
+        <b id="libndp">[libndp]</b>
+      </td>
+      <td class="top"><a title="University of Zagreb">Gros, S.</a>, "<a href="https://github.com/terastream/MIF_libndp">libndp - Library for Neighbor Discovery Protocol</a>", January 2016.</td>
+    </tr>
+    <tr>
+      <td class="reference">
+        <b id="nmpvdsrc">[nmpvdsrc]</b>
+      </td>
+      <td class="top"><a title="University of Zagreb">Gros, S.</a>, "<a href="https://github.com/terastream/MIF_NetworkManager">NetworkManager with network namespaces and PvD extensions</a>", March 2016.</td>
+    </tr>
+    <tr>
+      <td class="reference">
         <b id="PvD-manager">[PvD-manager]</b>
       </td>
-      <td class="top"><a title="University of Zagreb">Jelenkovic, L.</a> and <a title="University of Zagreb">D. Skvorc</a>, "<a href="https://github.com/l30nard0/mif">PvD-manager repository</a>", March 2016.</td>
+      <td class="top"><a title="University of Zagreb">Jelenkovic, L.</a> and <a title="University of Zagreb">D. Skvorc</a>, "<a href="https://github.com/terastream/MIF_pvdmanager">PvD-manager repository</a>", March 2016.</td>
     </tr>
     <tr>
       <td class="reference">
         <b id="radvd">[radvd]</b>
       </td>
-      <td class="top"><a title="University of Zagreb">Skvorc, D.</a>, "<a href="https://github.com/dskvorc/mif-radvd">PvD-aware router advertisements daemon (radvd)</a>", February 2016.</td>
+      <td class="top"><a title="University of Zagreb">Skvorc, D.</a>, "<a href="https://github.com/terastream/MIF_radvd">PvD-aware router advertisements daemon (radvd)</a>", February 2016.</td>
     </tr>
   </tbody>
 </table>

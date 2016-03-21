@@ -7,15 +7,10 @@
      An alternate method (rfc include) is described in the references. -->
 
 <!ENTITY RFC2119 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml">
-<!ENTITY RFC2629 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.2629.xml">
-<!ENTITY RFC3552 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.3552.xml">
-<!ENTITY I-D.narten-iana-considerations-rfc2434bis SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.narten-iana-considerations-rfc2434bis.xml">
-<!ENTITY I-D.ietf-mif-mpvd-dhcp-support SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.ietf-mif-mpvd-dhcp-support.xml">
 <!ENTITY I-D.ietf-mif-mpvd-ndp-support SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.ietf-mif-mpvd-ndp-support.xml">
 <!ENTITY I-D.ietf-mif-mpvd-id SYSTEM "http://xml.resource.org/public/rfc/bibxml3/reference.I-D.ietf-mif-mpvd-id.xml">
 
 <!ENTITY RFC6418 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6418.xml">
-<!ENTITY RFC6419 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.6419.xml">
 <!ENTITY RFC7556 SYSTEM "http://xml.resource.org/public/rfc/bibxml/reference.RFC.7556.xml">
 ]>
 <?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
@@ -150,8 +145,9 @@
       described in <xref target="networkmanager" />. Before implementations
       are described, in <xref target="common" /> some common elements to both
       implementations are described. Finally, for testing purposes it was
-      necessary to have server component. For that purpose radvd routing
-      daemon was extended to send PvD container options. This modification
+      necessary to have server component. For that purpose <xref
+      target="radvd-src">radvd routing daemon</xref> was extended to send
+      PvD container options. This modification
       is described in <xref target="section-radvd" />
       </t>
 
@@ -238,24 +234,24 @@
 </t>
 <figure anchor="PvD-manager-architecture" title="PvD prototype architecture overview">
 <artwork><![CDATA[
-+---------------------------------------------------+  +-------------+
-| +-----------------------------------------------+ |  |   +-------+ |
-| | PvD-manager                                   | |  | +-+ radvd | |
-| | +-----------+   +-----------+   +-----------+ | |  | | +-------+ |
-| | | pvdserver +->-+   pvdman  +-<-+ ndpclient | | |  | |           |
-| | +-----+-----+   +-------+---+   +-----+-----+ | |  | | +-------+ |
-| +-------|-----------------|-------------|-------+ |  | +-+ httpd | |
-|         |d-bus      create|configure    |RA/RS    |  | | +-------+ |
-| get_pvds|           delete|             |HTTP     |  | |           |
-| +-------|-------+    +----+---------+   |         |  | |           |
-| | +-----+-----+ |join|   network    |  -+---------+--+-+--        -+-
-| | |  MIF API  +------+  namespace   |             |  |             |
-| | +-----------+ |    |  operations  |             |  |             |
-| |               |    +--------------+             |  |             |
-| |   PvD aware   |                                 |  |             |
-| |  application  |                                 |  |             |
-| +---------------+                    Client (PC)  |  |     Router  |
-+---------------------------------------------------+  +-------------+
++---------------------------------------------------+ +------------+
+| +-----------------------------------------------+ | |   +-------+|
+| | PvD-manager                                   | | | +-+ radvd ||
+| | +-----------+   +-----------+   +-----------+ | | | | +-------+|
+| | | pvdserver +->-+   pvdman  +-<-+ ndpclient | | | | |          |
+| | +-----+-----+   +-------+---+   +-----+-----+ | | | | +-------+|
+| +-------|-----------------|-------------|-------+ | | +-+ httpd ||
+|         |d-bus      create|configure    |RA/RS    | | | +-------+|
+| get_pvds|           delete|             |HTTP     | | |          |
+| +-------|-------+    +----+---------+   |         | | |          |
+| | +-----+-----+ |join|   network    |  -+---------+-+-+--       -+-
+| | |  MIF API  +------+  namespace   |             | |            |
+| | +-----------+ |    |  operations  |             | |            |
+| |               |    +--------------+             | |            |
+| |   PvD aware   |                                 | |            |
+| |  application  |                                 | |            |
+| +---------------+                    Client (PC)  | |     Router |
++---------------------------------------------------+ +------------+
 ]]></artwork>
 </figure>
 <t>
@@ -510,17 +506,23 @@ From R2:
 </t>
 <figure anchor="demo-system" title="Network configuration used in test scenarios">
 <artwork><![CDATA[
-              fd01::1/64+----+                                   +----+
-        2001:db8:1::1/64|    |2001:db8:10::1/32 2001:db8:10::2/32|    |
-           +----------o-+ R1 +-o-------------------------------o-+ S1 |
-+------+   |            |    |        :     [VMnet3]             |    |
-|      |   |            +----+        :                          +----+
-|Client+-o-+ [VMnet2]                 : (for some tests this is linked)
-|      |   |            +----+        :                          +----+
-+------+   |            |    |        :     [VMnet4]             |    |
-           +----------o-+ R2 +-o-------------------------------o-+ S2 |
-        2001:db8:2::1/64|    |2001:db8:20::1/32 2001:db8:20::2/32|    |
-              fd02::1/64+----+                                   +----+
+
+             fd01::1/64 +----+                                +----+
+       2001:db8:1::1/64 |    |        2001:db8:10::1/32       |    |
+                        |    |        2001:db8:10::2/32       |    |
+           +----------o-+ R1 +-o----------------------------o-+ S1 |
++------+   |            |    |      :       [VMnet3]          |    |
+|      |   |            |    |      :                         |    |
+|      |   |            +----+      : (for some tests         +----+
+|Client+-o-+ [VMnet2]               :  this link is 
+|      |   |            +----+      :  established)           +----+
+|      |   |            |    |      :                         |    |
++------+   |            |    |      :       [VMnet4]          |    |
+           +----------o-+ R2 +-o----------------------------o-+ S2 |
+                        |    |        2001:db8:20::1/32       |    |
+       2001:db8:2::1/64 |    |        2001:db8:20::2/32       |    |
+             fd02::1/64 +----+                                +----+
+
 ]]></artwork>
 </figure>
 
@@ -566,7 +568,19 @@ From R2:
 </section>
 
 <section title="Experiences gained">
-<section title="Linux namespaces">
+
+        <t>
+        Since main implementation mechanism used to separate
+        different PvD configuration from each other are Linux
+        namespaces, in this section we discuss its suitability as a
+        solution to the given problem. Linux namespaces were
+        selected as main implementation mechanism during the design
+        phase, based on their theoretical properties and limited
+        hands-on experience from our previous projects. Comments
+        that follow reflect our opinions gained during the
+        implementation and testing phase.
+        </t>
+
 <t>
 	Using Linux namespaces still seems best option for PvD realization despite
 	its drawbacks. Its isolation and ease of use from PvD-manager and
@@ -574,6 +588,7 @@ From R2:
 	Besides already mentioned need for separate IP address per
 	namespace, there are several more issues with namespaces.
 </t>
+
 <t>
 	Managing namespaces (creation, deletion, modification) requires root
 	privileges (as expected). However, even switching an application from one
@@ -583,6 +598,7 @@ From R2:
 	handling is required. Some sort of permission system should also be applied to
 	namespaces (e.g. similar to permissions on files and system objects).
 </t>
+
 <t>
 	Switching namespace from within the application with setns() system call doesn't update DNS
 	related configuration as expected. When an application is started with commands
@@ -592,6 +608,7 @@ From R2:
 	behavior, and that manipulations should be done separately (mounting certain
 	directories/files).
 </t>
+
 <t>
 	When a namespace is created, a virtual device is created that is linked
 	with physical device (and it gets assigned its own MAC address). However, if
@@ -601,6 +618,7 @@ From R2:
 	Sometimes, it's better to move physical device to particular namespace (PvD)
 	and allow only some applications to use it (e.g. like VPN).
 </t>
+
 <t>
 	Managing namespace: creating, deleting, adding device to it, adding ip addresses
 	and routes are operations performed within PvD-manager and they aren't instant.
@@ -614,6 +632,7 @@ From R2:
 	process of network reconfiguration required by PvD-manager that should be
 	applied in the Linux kernel.
 </t>
+
 <t>
 	Recently added feature to the Linux kernel (January, 2016), named
 	<eref target="https://www.kernel.org/doc/Documentation/networking/vrf.txt">
@@ -622,7 +641,6 @@ From R2:
 	needed to draw valid conclusions.
 </t>
 
-</section>
 </section>
 
 </section>
@@ -1423,6 +1441,16 @@ processing RAs in different network namespaces?
           </t>
 
         </list></t>
+
+        <t>
+        The NetworkManager sources that are described by this draft are
+        available on <xref target="nmpvdsrc">GitHub repository</xref>.
+        Additionally, NetworkManager uses libndp library to parse and
+        create RA and RS messages. This library was also modified as a
+        part of this project to support <xref target="I-D.ietf-mif-mpvd-ndp-support">
+        PvD CO option</xref>. The modified libndp code can also be found
+        on <xref target="libndp">GitHub</xref>.
+        </t>
 
         <t>
         First step towards PvD implementation in NetworkManager was to
@@ -2414,18 +2442,6 @@ processing RAs in different network namespaces?
   <!--  *****BACK MATTER ***** -->
 
   <back>
-    <!-- References split into informative and normative -->
-
-    <!-- There are 2 ways to insert reference entries from the citation libraries:
-     1. define an ENTITY at the top, and use "ampersand character"RFC2629; here (as shown)
-     2. simply use a PI "less than character"?rfc include="reference.RFC.2119.xml"?> here
-        (for I-Ds: include="reference.I-D.narten-iana-considerations-rfc2434bis.xml")
-
-     Both are cited textually in the same manner: by using xref elements.
-     If you use the PI option, xml2rfc will, by default, try to find included files in the same
-     directory as the including file. You can also define the XML_LIBRARY environment variable
-     with a value containing a set of directories to search.  These can be either in the local
-     filing system or remote ones accessed by http (http://domain/dir/... ).-->
 
     <references title="Normative References">
       <!--?rfc include="http://xml.resource.org/public/rfc/bibxml/reference.RFC.2119.xml"?-->
@@ -2434,22 +2450,12 @@ processing RAs in different network namespaces?
 
       &RFC6418;
 
-      &RFC6419;
-
       &RFC7556;
 
     </references>
 
     <references title="Informative References">
       <!-- Here we use entities that we defined at the beginning. -->
-
-      &RFC2629;
-
-      &RFC3552;
-
-      &I-D.narten-iana-considerations-rfc2434bis;
-
-      &I-D.ietf-mif-mpvd-dhcp-support;
 
       &I-D.ietf-mif-mpvd-ndp-support;
       
@@ -2492,37 +2498,49 @@ processing RAs in different network namespaces?
     </references>
 
     <references title="Implementation repositories">
-		<reference anchor="PvD-manager" target="https://github.com/l30nard0/mif">
-		<front>
-			<title>PvD-manager repository</title>
-			<author fullname="Leonardo Jelenkovic"
-					initials="L." surname="Jelenkovic"
-					>
-			<organization>University of Zagreb</organization>
-			</author>
 
-			<author fullname="Dejan Skvorc"
-					initials="D." surname="Skvorc"
-					>
-			<organization>University of Zagreb</organization>
-			</author>
+      <reference anchor="PvD-manager" target="https://github.com/terastream/MIF_pvdmanager">
+        <front>
+          <title>PvD-manager repository</title>
+          <author fullname="Leonardo Jelenkovic" initials="L." surname="Jelenkovic">
+            <organization>University of Zagreb</organization>
+          </author>
+          <author fullname="Dejan Skvorc" initials="D." surname="Skvorc">
+            <organization>University of Zagreb</organization>
+          </author>
+          <date month="March" year="2016" />
+        </front>
+      </reference>
 
-			<date month="March" year="2016" />
-		</front>
-		</reference>
+      <reference anchor="radvd" target="https://github.com/terastream/MIF_radvd">
+        <front>
+          <title>PvD-aware router advertisements daemon (radvd)</title>
+          <author fullname="Dejan Skvorc" initials="D." surname="Skvorc">
+            <organization>University of Zagreb</organization>
+          </author>
+          <date month="February" year="2016" />
+        </front>
+      </reference>
 
-		<reference anchor="radvd" target="https://github.com/dskvorc/mif-radvd">
-		<front>
-			<title>PvD-aware router advertisements daemon (radvd)</title>
-			<author fullname="Dejan Skvorc"
-					initials="D." surname="Skvorc"
-					>
-			<organization>University of Zagreb</organization>
-			</author>
+      <reference anchor="libndp" target="https://github.com/terastream/MIF_libndp">
+        <front>
+          <title>libndp - Library for Neighbor Discovery Protocol</title>
+          <author fullname="Stjepan Gros" initials="S." surname="Gros">
+            <organization>University of Zagreb</organization>
+          </author>
+          <date month="January" year="2016" />
+        </front>
+      </reference>
 
-			<date month="February" year="2016" />
-		</front>
-		</reference>
+      <reference anchor="nmpvdsrc" target="https://github.com/terastream/MIF_NetworkManager">
+        <front>
+          <title>NetworkManager with network namespaces and PvD extensions</title>
+          <author fullname="Stjepan Gros" initials="S." surname="Gros">
+            <organization>University of Zagreb</organization>
+          </author>
+          <date month="March" year="2016" />
+        </front>
+      </reference>
 
     </references>
 
