@@ -534,7 +534,7 @@
 <p id="rfc.section.2.p.3">Next, in the analysis phase, the implementations assessment was done to determine which mechanisms to use with the main goal of having control over the use of provisioning domains (PvDs) by applications.  In other words, the main issue was how to control which PvD will an application use in the presence of multiple provisioning domains.  The problems we tried to address are well described in <a href="#RFC6418">RFC 6418</a> <cite title="NONE">[RFC6418]</cite>. The conclusion was that the network namespaces are the most appropriate mechanism to control application use of provisioning domains.  </p>
 <p id="rfc.section.2.p.4">Still, while network namespaces were found to be the most appropriate mechanism for separation of PvD-related network configurations, there is a big issue in that it is not possible to have the same PvD instance in separate network namespaces. To get around that issue, multiple PvD instaces could be used by a single node.  However, this is not without the problems either. First, from the operational perspective this leads to proliferation of IP addresses and to issues with accountability. It is even a bigger issue on IPv4 networks that have restricted number of PvD instances per each PvD.  </p>
 <h1 id="rfc.section.3"><a href="#rfc.section.3">3.</a> <a href="#pvdmanager" id="pvdmanager">PvD-manager Implementation</a></h1>
-<p id="rfc.section.3.p.1">PvD-manager is a client-side component for IPv6 network auto-configuration based on multiple provisioning domains (PvDs), as described in <a href="#RFC6418">RFC 6418</a> <cite title="NONE">[RFC6418]</cite> and <a href="#RFC7556">RFC 7556</a> <cite title="NONE">[RFC7556]</cite>.  PvD-manager is orthogonal to existing system, which means it does not interfere with regular network behavior: none of the services and settings used by Network Manager and similar components are not changed nor affected.  Source code and instructions of how to run the PvD-manager are available at its <a href="#PvD-manager">git repository</a> <cite title="NONE">[PvD-manager]</cite>.  </p>
+<p id="rfc.section.3.p.1">PvD-manager is a client-side component for IPv6 network auto-configuration based on multiple provisioning domains (PvDs), as described in <a href="#RFC6418">RFC 6418</a> <cite title="NONE">[RFC6418]</cite> and <a href="#RFC7556">RFC 7556</a> <cite title="NONE">[RFC7556]</cite>.  PvD-manager is orthogonal to existing system, which means it does not interfere with regular network behavior: none of the services and settings used by Network Manager and similar components are changed or affected.  Source code and instructions of how to run the PvD-manager are available at its <a href="#PvD-manager">git repository</a> <cite title="NONE">[PvD-manager]</cite>.  </p>
 <h1 id="rfc.section.3.1"><a href="#rfc.section.3.1">3.1.</a> Architecture</h1>
 <p id="rfc.section.3.1.p.1">PvDs are implemented through Linux network namespaces. For each coherent PvD information set received on the network interface, PvD-manager creates a separate network namespace and configures received network parameters within that namespace. Since each network namespace uses separate IP stack which is isolated from other namespaces, potentially conflicting network parameters received from different network providers can safely coexist on a single host. PvD-manager manages only those newly created namespaces associated with the PvDs and their network settings and leaves the default network namespace intact. That way, all the existing network management components, such as Network Manager, continue to work unobtrusively.  </p>
 <p><a href="#PvD-manager-architecture">Figure 1</a> presents an overview of a system and its components that use PvD-manager.  </p>
@@ -689,7 +689,7 @@ From R2:
   <dd style="margin-left: 6"><br/> This is a final use case that isn't possible by the current protocol design. Namely, DHCP offers received are treated as alternative and there is no way to have multiple concurrent DHCP servers on a single local network.  </dd>
 </dl>
 <p id="rfc.section.4.1.p.5">It isn't hard to see that NetworkManager mixes multiple PvD instances that leads to very complex situations in which it is hard to control which PvD instance will be used by applications.  There are standard mechanisms, like source address selection, but no DNS selection, nor destination address selection.  Some control is possible by default route installation. Namely, it is possible to instruct NetworkManager not to install default route for specific connections (like for example VPN) even though default route was received as a part of the configuration.  NetworkManager uses this mechanism to enforce some simple policies, like to give a preference to wired over wireless connection.  </p>
-<p id="rfc.section.4.1.p.6">Applications don't have any control of network configurations they use and there is no standard way for applications to find out what specific connection offer in terms of quality of service, cost and reachability.  </p>
+<p id="rfc.section.4.1.p.6">Applications don't have any control of network configurations they use and there is no standard way for applications to find out what specific connection offers in terms of quality of service, cost and reachability.  </p>
 <h1 id="rfc.section.4.2"><a href="#rfc.section.4.2">4.2.</a> The Architecture and Components</h1>
 <p id="rfc.section.4.2.p.1">We can describe NetworkManager in terms of static architecture and runtime behavior. The static architecture is reflected by the source code organization and libraries and external programs used.  The purpose of this draft is only to present the core of the NetworkManager, but keep in mind that there are other components which we'll not cover.  </p>
 <p id="rfc.section.4.2.p.2">When the source code archive of NetworkManager is unpacked, there is a src/ subdirectory of top-level directory. This is the main part of the NetworkManager and there you'll find the following subdirectories and files: </p>
@@ -703,7 +703,7 @@ From R2:
   <dt>platform/</dt>
   <dd style="margin-left: 6"><br/> Platform specific code that isolates NetworkManager from specifics of a certain operating system. The only supported platform at the time this draft was written was for Linux. Platform is used to communicate with network specific parts within the Linux kernel operating system.  </dd>
   <dt>rdisc/</dt>
-  <dd style="margin-left: 6"><br/> Objects that are used to send/receive RA/RS messages. There is a platform independent object and platform dependent objects. Platform dependent objects do real receive/send events. NetworkManager uses libndp library here to send, receive and parse RA and RS messages.  </dd>
+  <dd style="margin-left: 6"><br/> Objects that are used to send/receive RA/RS messages. There is a platform independent object and platform dependent objects. Platform dependent objects do real receive/send operations and Linux is currently the only supported platform. NetworkManager uses libndp library here to send, receive and parse RA and RS messages.  </dd>
   <dt>settings/</dt>
   <dd style="margin-left: 6"><br/> In this subdirectory are objects that represent connections (NMSettingsConnection) and a singleton object NMSettings that manages all connection objects.  </dd>
   <dt>vpn-manager/</dt>
@@ -711,6 +711,7 @@ From R2:
   <dt>nm-manager</dt>
   <dd style="margin-left: 6"><br/> This is the main object, NMManager, that controls everything.  </dd>
 </dl>
+<p id="rfc.section.4.2.p.4">For the run-time behavior, when NetworkManager is started appropriate objects are created. The main objects are singleton object, like NMManager, NMSetting, NMPlatform but there are also non-singleton objects like NMDevice that is instantiated as many time as there are devices on a system. Since objects, in general, run concurrently one important aspect of the initialization is connecting different objects.  After the initialization finishes, NM waits for external events and reacts appropriately.  </p>
 <h1 id="rfc.section.4.3"><a href="#rfc.section.4.3">4.3.</a> Existing NetworkManager API</h1>
 <p id="rfc.section.4.3.p.1">NetworkManager has an API that is targed primarily to management applications. It can be used by networking application also, but it isn't currently the case. Probably the reason for this is restricted functionality of the API in the sense that applications couldn't gain much by using it.  </p>
 <p id="rfc.section.4.3.p.2">There are two important concepts necessary to understand the API provided by NetworkManager: </p>
@@ -781,7 +782,7 @@ From R2:
 <p id="rfc.section.4.5.1.p.7">There are several potential problems with this approach: </p>
 <p/>
 
-<ul class="empty">
+<ul>
   <li>There is a difference between NMSettingsConnection on the one hand, and PvD and PvD instance on the other hand. For example, some NMSettingsConnection defines a network connection that should be configured using DHCP and in that case the NMSettingsConnection isn't PvD nor PvD instance. On the other hand, NMSettingsConnection can be the same as PvD instance. This is the case with static IPv4 configurations when a user specifies concrete IP addresses. Finally, NMSettingsConnection can be PvD only in the case of IPv6 when host part is generated from MAC address.  </li>
   <li>When PvDs and PvD instances are received they are valid only for the interface on which they are received. But, a user can request any NMSettingsConnection object to be activated on any interface which isn't possible.  </li>
   <li>Also, this can create confusion. Take for example preconfigured NMSettingsConnection which is now treated as PvD with a specific PvD ID, and it is defined to use DHCP for the configuration. Obviously, this PvD ID is expected to be valid on a certain interface on a specific attachment point. But due to the way the interface is configured (DHCP) it can actually be activated on any interface on any network that supports DHCP. Thus, it might easily happen that a user by mistake activated this particular NMSettingsConnection on a "wrong" network and so makes a user believe the network is active while in the reality it is not.  </li>
@@ -795,7 +796,7 @@ From R2:
 <p id="rfc.section.4.5.2.p.3">But, there are still some problems: </p>
 <p/>
 
-<ul class="empty">
+<ul>
   <li>Since NMActiveConnection objects are transient that means that there would be no history of PvDs used. This might, or might not be a problem, depending on whether we need this history or not.  <br/> <br/> The cases when the history would be necessary is if we cache some information for the next time we connect to the given PvD. The second case is if there are processes still using PvD through API and thus the information about PvD must live until the process dies. Note that this letter problem could be solved with delayed removal of NMActiveConnections or by some asynchronous mechanism informing applications that specific NMActiveConnection isn't available any more.  </li>
   <li>The second problem is the question if there could exist two ActiveConnection objects that were created from the same NMSettingsConnection object, i.e. can NMSettingsConnections be shared.  </li>
   <li>The third problem is that it will happen from within a single NMActiveConnection that two or more PvDs are received and this requires that NMActiveConnection is a factory for itself.  </li>
@@ -807,7 +808,7 @@ From R2:
 <p id="rfc.section.4.5.3.p.4">The problems in this case are: </p>
 <p/>
 
-<ul class="empty">
+<ul>
   <li>NMIPxConfig objects were not intended to keep information about available IPv4 and IPv6 addresses but to make available addresses configured on device. So, it reverses the purpose of those objects which isn't accepted so well.  </li>
   <li>Again, those are transient objects and thus there is no history.  It is possible to keep every object alive, but NM isn't designed to behave in such way.  </li>
   <li>It seems that in libnm there is no way to obtain a list of IPv4 and IPv6 objects.  </li>
@@ -864,7 +865,7 @@ From R2:
 <p id="rfc.section.4.7.p.1">The current work is focused on design of appropriate API that will be exposed over D-Bus to allow applications to activate and deactivate specific PvDs. It is not yet finished because there is no mapping between PvDs and current objects - like connections, devices, settings. Yet, two principles emerged: </p>
 <p/>
 
-<ul class="empty">
+<ul>
   <li>The changes to the existing API should be minimal. In other words we try to avoid introducing parallel API to the existing one.  </li>
   <li>Applications should be isolated from specifics of a network configuration, i.e. they shouldn't know or care which devices contain specific PvDs or how they should be composed, etc.  </li>
 </ul>
@@ -872,7 +873,7 @@ From R2:
 <p id="rfc.section.4.7.p.4">After API form is resolved, there are at least few more things that have to be sorted out before it can be considered the work to be finished: </p>
 <p/>
 
-<ul class="empty">
+<ul>
   <li>The API is still low level. It would be good to allow applications to specify requirements for the connections and then, based on this requirements, NetworkManager selects apropriate connection for the application.  </li>
   <li>Host name management has to be properly handled. Currently, this is ignored by PvD handling code within NetworkManager.  Still, this want be easy because it might happen that two PvDs have to be available to application each with different hostname.  </li>
   <li>DNS resolution is also currently lacking, specially considering there are existing RFCs that allow domains to be specified for each DNS server and the new drafts that appeared recently in MIF WG.  </li>
@@ -897,7 +898,7 @@ From R2:
 <p id="rfc.section.4.8.1.p.2">The idea is to generate stable identifier independent of PvD instance based on a set of configuration options that uniquely identify a PvD. This would allow PvD aware applications to be more uniform in a sense that they don't have any special functionality (or it is minimized) for support of legacy configurations. The requirements are also: </p>
 <p/>
 
-<ul class="empty">
+<ul>
   <li>Two independent clients, or client and server, generate the same PvD ID and in that way it is possible to do more specific configurations based on PvD ID. A more specific configuration might be, for example, what is a purpose of some specific PvD.  </li>
   <li>The process of generating PvD ID should allow clients to detect connectivity changes, i.e. to know when they are connected to another network, or when connectivity of the existing network changed.  </li>
   <li>The process of generating PvD ID should be such that all PvD aware nodes, receiving the same set of configuration parameters (i.e. the same implicit PvD), would assign it the same PvD ID.  </li>
@@ -939,7 +940,7 @@ From R2:
 <p id="rfc.section.4.8.2.p.3">Some questions are not specific for PvDs but are also valid for NDP in general so they might already have an answer. Still, for completness and until we figure out answers, here they are: </p>
 <p/>
 
-<ul class="empty">
+<ul>
   <li>There are multiple lifetimes in RA message, and in PvD in particular.  What if one element of PvD times out, others not? Should only this particular element be removed, or the all PvD? For example, what if prefix disappears and other elements don't? </li>
   <li>What if in one RA message there is certain set of parameters, but then in the following message some parameters from the first message are missing? How should implementation react in that case? </li>
 </ul>

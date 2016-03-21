@@ -209,7 +209,7 @@
 	<xref target="RFC6418">RFC 6418</xref> and <xref target="RFC7556">RFC 7556</xref>.
 	PvD-manager is orthogonal to existing system, which means it does not interfere
 	with regular network behavior: none of the services and settings used by Network
-	Manager and similar components are not changed nor affected.
+	Manager and similar components are changed or affected.
 	Source code and instructions of how to run the PvD-manager are available at its
 	<xref target="PvD-manager">git repository</xref>.
 
@@ -702,7 +702,7 @@ From R2:
           IP packet processing path (e.g. IPsec). In any case, interface and
           the associated PvD instance are assigned and present in the root
           network namespace. Furthermore, DNS data is also merged with
-          existing data (modification of /etc/resolv.conf).
+          existing data (modification of /etc/resolv.conf). 
           </t>
 
           <t hangText="Concurrent active wired and wireless connections.">
@@ -756,7 +756,7 @@ From R2:
         <t>
         Applications don't have any control of network configurations
         they use and there is no standard way for applications to find
-        out what specific connection offer in terms of quality of
+        out what specific connection offers in terms of quality of
         service, cost and reachability.
         </t>
 
@@ -826,8 +826,9 @@ From R2:
           <vspace />
           Objects that are used to send/receive RA/RS messages. There is a
           platform independent object and platform dependent objects. Platform
-          dependent objects do real receive/send events. NetworkManager uses
-          libndp library here to send, receive and parse RA and RS messages.
+          dependent objects do real receive/send operations and Linux is currently
+          the only supported platform. NetworkManager uses libndp library here
+          to send, receive and parse RA and RS messages.
           </t>
 
           <t hangText="settings/">
@@ -874,6 +875,17 @@ From R2:
           </t>
 
         </list></t>
+
+        <t>
+        For the run-time behavior, when NetworkManager is started appropriate
+        objects are created. The main objects are singleton object, like
+        NMManager, NMSetting, NMPlatform but there are also non-singleton
+        objects like NMDevice that is instantiated as many time as there are
+        devices on a system. Since objects, in general, run concurrently one
+        important aspect of the initialization is connecting different objects.
+        After the initialization finishes, NM waits for external events and
+        reacts appropriately.
+        </t>
 
       </section>
 
@@ -1193,7 +1205,7 @@ processing RAs in different network namespaces?
           There are several potential problems with this approach:
           </t>
 
-          <t><list>
+          <t><list style="symbols">
 
             <t>
             There is a difference between NMSettingsConnection on the
@@ -1280,7 +1292,7 @@ processing RAs in different network namespaces?
           But, there are still some problems:
           </t>
 
-          <t><list>
+          <t><list style="symbols">
 
             <t>
             Since NMActiveConnection objects are transient that means that
@@ -1349,7 +1361,7 @@ processing RAs in different network namespaces?
           The problems in this case are:
           </t>
 
-          <t><list>
+          <t><list style="symbols">
 
             <t>
             NMIPxConfig objects were not intended to keep information about
@@ -1707,7 +1719,7 @@ processing RAs in different network namespaces?
         devices, settings. Yet, two principles emerged:
         </t>
 
-        <t><list>
+        <t><list style="symbols">
 
           <t>
           The changes to the existing API should be minimal. In other
@@ -1739,7 +1751,7 @@ processing RAs in different network namespaces?
         work to be finished:
         </t>
 
-        <t><list>
+        <t><list style="symbols">
 
           <t>
           The API is still low level. It would be good to allow
@@ -1841,7 +1853,7 @@ processing RAs in different network namespaces?
           configurations. The requirements are also:
           </t>
 
-          <t><list>
+          <t><list style="symbols">
 
             <t>
             Two independent clients, or client and server, generate the
@@ -2027,7 +2039,7 @@ processing RAs in different network namespaces?
           and until we figure out answers, here they are:
 	  </t>
 
-          <t><list>
+          <t><list style="symbols">
 
             <t>
             There are multiple lifetimes in RA message, and in PvD in particular.
@@ -2058,12 +2070,12 @@ processing RAs in different network namespaces?
 
         <t>
         MPvD Architecture document distinguishes between implicit and
-        explicit PvDs. Additional distinction is necessary between PvD
-        and PvD instance.
+        explicit PvDs. Additional distinction is necessary between PvDs
+        and among PvD instances.
         </t>
 
         <t>
-        In section 2.2 the architecture document talks about treating
+        In Section 2.2 the architecture document talks about treating
         information received on different interfaces as being different
         PvDs. It might happen that different implicit PvDs are received
         on a single interface. Thus, this should be better defined, i.e.
@@ -2079,7 +2091,8 @@ processing RAs in different network namespaces?
         </t>
 
         <t>
-        PvD identifiers introduced in section 2.4. In this implementation
+        Different types of PvD identifiers are introduced in Section 2.4.
+        In this implementation
         only UUID is used, and to present user with something meaningful
         other mechanisms will be used. For example, connection description
         might be obtained via HTTP to appropriate URL, or query to DNS.
